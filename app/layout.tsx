@@ -2,6 +2,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { clerkAppearance, isClerkConfigured } from "@/lib/clerk";
+import { APP_PATH, CLERK_SIGN_IN_PATH, CLERK_SIGN_UP_PATH } from "@/lib/clerk-paths";
 import "./globals.css";
 
 const cream = "#fff8f0";
@@ -25,11 +26,11 @@ export default function RootLayout({
           <ClerkProvider
             appearance={clerkAppearance}
             waitlistUrl="/waitlist"
-            signInUrl="/sign-in"
-            signUpUrl="/sign-up"
+            signInUrl={CLERK_SIGN_IN_PATH}
+            signUpUrl={CLERK_SIGN_UP_PATH}
             afterSignOutUrl="/"
-            signInFallbackRedirectUrl="/"
-            signUpFallbackRedirectUrl="/"
+            signInFallbackRedirectUrl={APP_PATH}
+            signUpFallbackRedirectUrl={APP_PATH}
           >
             {children}
           </ClerkProvider>

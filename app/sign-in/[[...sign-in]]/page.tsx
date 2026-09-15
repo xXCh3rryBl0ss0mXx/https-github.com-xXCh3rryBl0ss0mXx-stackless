@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
 import { isClerkConfigured } from "@/lib/clerk";
+import { APP_PATH, CLERK_SIGN_UP_PATH } from "@/lib/clerk-paths";
 
 export const metadata: Metadata = {
   title: "Sign in — Stackless",
@@ -25,7 +26,12 @@ export default function SignInPage() {
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 pb-16">
         <div className="flex w-full justify-center">
           {isClerkConfigured() ? (
-            <SignIn routing="path" path="/sign-in" />
+            <SignIn
+              routing="path"
+              path="/sign-in"
+              signUpUrl={CLERK_SIGN_UP_PATH}
+              fallbackRedirectUrl={APP_PATH}
+            />
           ) : (
             <p className="text-center text-muted">Sign in isn’t connected yet.</p>
           )}

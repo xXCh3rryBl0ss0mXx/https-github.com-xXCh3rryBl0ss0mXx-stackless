@@ -29,13 +29,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - Signed out: the **top-right Sign Up** chip opens Clerk sign-up. **Get early access** (hero and bottom) opens the waitlist — not a `mailto:` link.
 - After you join: **You’re on the list** (also at `/waitlist?joined=1`).
-- Signed in: the top-right chip becomes your Clerk profile button (UserButton).
+- Signed in: **Today’s List** (opens `/app`) sits next to your Clerk profile button (UserButton). Signed out (and while Clerk loads, or without Clerk keys) the header only shows **Sign Up**.
 - `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
-- `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can click the seed data.
+- `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can click the seed data. With keys, signed-out visits go to the peach `/sign-in` page (not Clerk’s hosted Account Portal), then back to `/app`.
 
 `npm run build` works **without** Clerk keys. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the keys. Vercel preview/production **do** need the keys, then a **Redeploy**.
 
-## Today’s list (`/app`)
+## Today’s List (`/app`)
 
 Two queues: people whose follow-up date is due, and open invoices past their due date. Each row has an editable draft. **Save draft**, **Mark sent**, and **Skip** all go through `DataStore` (`lib/data/types.ts`). Copy the text into your real email — Stackless does not send mail yet.
 
