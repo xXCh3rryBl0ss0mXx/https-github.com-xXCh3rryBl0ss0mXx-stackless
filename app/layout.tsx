@@ -19,7 +19,11 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {isClerkConfigured() ? (
-          <ClerkProvider appearance={clerkAppearance} waitlistUrl="/waitlist">
+          <ClerkProvider
+            appearance={clerkAppearance}
+            waitlistUrl="/waitlist"
+            signUpUrl="/sign-up"
+          >
             {children}
           </ClerkProvider>
         ) : (

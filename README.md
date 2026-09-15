@@ -25,10 +25,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-- Signed out: **Get early access** (header chip, hero, and bottom) opens Clerk waitlist — not a `mailto:` link.
+- Signed out: the **top-right Sign Up** chip opens Clerk sign-up. **Get early access** (hero and bottom) opens the waitlist — not a `mailto:` link.
 - After you join: **You’re on the list** (also at `/waitlist?joined=1`).
-- Signed in: the header chip becomes your Clerk profile button (UserButton).
-- `/waitlist` is the same peach signup page if you open it directly.
+- Signed in: the top-right chip becomes your Clerk profile button (UserButton).
+- `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
 
 `npm run build` works **without** Clerk keys. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the keys. Vercel preview/production **do** need the keys, then a **Redeploy**.
 

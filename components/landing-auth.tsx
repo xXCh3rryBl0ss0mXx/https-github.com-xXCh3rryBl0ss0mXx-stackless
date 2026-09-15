@@ -1,6 +1,7 @@
 "use client";
 
-import { Show, UserButton, useClerk } from "@clerk/nextjs";
+import { Show, SignUpButton, UserButton, useClerk } from "@clerk/nextjs";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { isClerkConfigured } from "@/lib/clerk";
 
@@ -36,7 +37,11 @@ function ClerkHeaderCta({ className }: { className: string }) {
     <Show
       when="signed-in"
       fallback={
-        <WaitlistTrigger className={className}>Get early access</WaitlistTrigger>
+        <SignUpButton mode="modal" forceRedirectUrl={WAITLIST_AFTER_JOIN}>
+          <button type="button" className={className}>
+            Sign Up
+          </button>
+        </SignUpButton>
       }
     >
       <UserButton />
@@ -47,9 +52,9 @@ function ClerkHeaderCta({ className }: { className: string }) {
 export function LandingHeaderCta({ className }: { className: string }) {
   if (!isClerkConfigured()) {
     return (
-      <a className={className} href="/waitlist">
-        Get early access
-      </a>
+      <Link className={className} href="/sign-up">
+        Sign Up
+      </Link>
     );
   }
 
@@ -65,9 +70,9 @@ export function EarlyAccessButton({
 }) {
   if (!isClerkConfigured()) {
     return (
-      <a id={id} className={className} href="/waitlist">
+      <Link id={id} className={className} href="/waitlist">
         Get early access
-      </a>
+      </Link>
     );
   }
 
