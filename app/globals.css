@@ -24,11 +24,19 @@
   --font-sans: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
 }
 
+html {
+  min-height: 100%;
+  background-color: var(--color-bg);
+}
+
 body {
-  background:
-    radial-gradient(circle at 10% 0%, rgba(255, 180, 138, 0.35), transparent 40%),
-    radial-gradient(circle at 90% 10%, rgba(196, 181, 253, 0.3), transparent 35%),
-    var(--color-bg);
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(circle at 10% 0%, rgba(255, 180, 138, 0.35), transparent 45%),
+    radial-gradient(circle at 90% 12%, rgba(196, 181, 253, 0.3), transparent 42%),
+    radial-gradient(circle at 50% 100%, rgba(127, 214, 176, 0.22), transparent 40%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   color: var(--color-ink);
   font-family: var(--font-sans);
   line-height: 1.55;

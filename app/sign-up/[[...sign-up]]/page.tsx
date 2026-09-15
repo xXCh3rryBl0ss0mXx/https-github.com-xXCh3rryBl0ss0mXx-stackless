@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function SignUpPage() {
   return (
-    <div className="mx-auto w-[min(960px,calc(100%-2rem))] pt-6 pb-12">
+    <div className="mx-auto flex min-h-screen w-[min(960px,calc(100%-2rem))] flex-col pt-6 pb-16">
       <header className="mb-8 flex items-center justify-between">
         <Link className="text-[1.3rem] font-extrabold text-ink no-underline" href="/">
           Stack<span className="text-logo-accent">less</span>
@@ -23,7 +23,7 @@ export default function SignUpPage() {
         </Link>
       </header>
 
-      <section className="mx-auto flex max-w-lg flex-col items-center rounded-[28px] border border-line bg-card px-6 py-8 shadow-[0_18px_40px_rgba(80,50,20,0.06)]">
+      <section className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center">
         <div className="mb-[0.9rem] inline-block rounded-full bg-badge-bg px-3 py-[0.3rem] text-[0.8rem] font-bold text-badge-fg">
           Early access
         </div>
