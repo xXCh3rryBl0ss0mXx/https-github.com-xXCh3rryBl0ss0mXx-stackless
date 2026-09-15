@@ -79,3 +79,14 @@ body {
   margin-left: auto;
   margin-right: auto;
 }
+
+/* Hide Clerk waitlist/auth chrome: "Secured by Clerk" + "Development mode" */
+.cl-badge,
+.cl-internal-b3fm6y,
+.cl-footerPages,
+.cl-logoBox,
+.cl-logoImage,
+a[href*="clerk.com"][target="_blank"],
+.cl-footer .cl-internal-1dauvpw {
+  display: none !important;
+}
