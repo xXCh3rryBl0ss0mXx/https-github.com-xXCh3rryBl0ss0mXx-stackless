@@ -1,5 +1,4 @@
-const EARLY_ACCESS =
-  "mailto:hello@stackless.app?subject=Early%20access";
+const EARLY_ACCESS = "/waitlist";
 
 const btnClass =
   "inline-block rounded-full bg-linear-to-br from-peach to-btn-end px-[1.35rem] py-[0.9rem] font-extrabold text-btn-ink no-underline shadow-[0_8px_20px_rgba(255,143,102,0.35)]";
@@ -13,7 +12,7 @@ export default function Home() {
         </div>
         <a
           className="rounded-full border border-line bg-white px-4 py-2 text-[0.9rem] font-semibold text-muted no-underline"
-          href="#go"
+          href={EARLY_ACCESS}
         >
           Get early access
         </a>
