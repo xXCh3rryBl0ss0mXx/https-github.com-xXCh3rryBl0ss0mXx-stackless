@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { followUpDraftText, invoiceDraftText } from "@/lib/data/draft-text";
 import { getDataStore } from "@/lib/data/store";
 import type { Nudge, NudgeKind } from "@/lib/data/types";
+import { deliverNudgeDraft } from "@/lib/email/deliver";
 import { requireSignedIn } from "@/lib/require-signed-in";
 import { todayStamp } from "@/lib/today";
 
@@ -60,11 +61,32 @@ export async function saveDraftAction(formData: FormData) {
   revalidatePath("/app");
 }
 
-export async function markSentAction(formData: FormData) {
+export type SendNudgeActionState = { ok: true } | { ok: false; error: string };
+
+export async function sendNudgeAction(
+  _prev: SendNudgeActionState | null,
+  formData: FormData,
+): Promise<SendNudgeActionState> {
   await requireSignedIn();
-  const draft = await upsertDraft(formData);
-  await getDataStore().markNudgeSent(draft.id, todayStamp());
-  revalidatePath("/app");
+  try {
+    const nudgeId = String(formData.get("nudgeId") ?? "");
+    const store = getDataStore();
+    if (nudgeId) {
+      const existing = (await store.listNudges()).find((nudge) => nudge.id === nudgeId);
+      if (existing?.status === "sent") {
+        return { ok: false, error: "This one was already sent." };
+      }
+    }
+    const draft = await upsertDraft(formData);
+    const result = await deliverNudgeDraft(store, draft, todayStamp());
+    if (!result.ok) return { ok: false, error: result.error };
+    revalidatePath("/app");
+    return { ok: true };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Something went wrong sending this email.";
+    return { ok: false, error: message };
+  }
 }
 
 export async function skipAction(formData: FormData) {

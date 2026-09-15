@@ -14,6 +14,18 @@ function stillInQueue(nudges: Nudge[], relatedId: string, today: string): boolea
   return true;
 }
 
+function emailFor(
+  kind: Nudge["kind"],
+  relatedId: string,
+  leads: Lead[],
+  invoices: Invoice[],
+): string | undefined {
+  if (kind === "follow_up") {
+    return leads.find((lead) => lead.id === relatedId)?.email;
+  }
+  return invoices.find((invoice) => invoice.id === relatedId)?.clientEmail;
+}
+
 function leadStatusLabel(status: Lead["status"]): string {
   if (status === "waiting_on_them") return "Waiting on them";
   if (status === "waiting_on_you") return "Waiting on you";
@@ -42,7 +54,7 @@ export function NudgeBoard({
           People to follow up with
         </h2>
         <p className="mb-4 text-muted">
-          Quiet leads. Edit the draft, copy it into your email, then mark it sent.
+          Quiet leads. Edit the draft, then tap Send email.
         </p>
         {followUps.length === 0 ? (
           <p className="rounded-[20px] border border-line bg-card p-[1.15rem] text-muted">
@@ -81,6 +93,7 @@ export function NudgeBoard({
                     relatedId={lead.id}
                     nudgeId={draft?.id}
                     initialText={draft?.draftText ?? followUpDraftText(lead)}
+                    toEmail={lead.email}
                   />
                 </article>
               );
@@ -92,7 +105,7 @@ export function NudgeBoard({
       <section>
         <h2 className="mb-1 text-[1.5rem] font-bold tracking-[-0.02em]">Overdue invoices</h2>
         <p className="mb-4 text-muted">
-          Open bills past their due date. Same loop: edit, send from your email, mark sent.
+          Open bills past their due date. Edit the reminder, then tap Send email.
         </p>
         {overdue.length === 0 ? (
           <p className="rounded-[20px] border border-line bg-card p-[1.15rem] text-muted">
@@ -130,6 +143,7 @@ export function NudgeBoard({
                     relatedId={invoice.id}
                     nudgeId={draft?.id}
                     initialText={draft?.draftText ?? invoiceDraftText(invoice)}
+                    toEmail={invoice.clientEmail}
                   />
                 </article>
               );
@@ -174,6 +188,7 @@ export function NudgeBoard({
                       relatedId={nudge.relatedId}
                       nudgeId={nudge.id}
                       initialText={nudge.draftText}
+                      toEmail={emailFor(nudge.kind, nudge.relatedId, leads, invoices)}
                     />
                   ) : (
                     <p className="whitespace-pre-wrap text-[0.95rem] text-bubble">
