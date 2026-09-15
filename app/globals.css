@@ -80,6 +80,28 @@ body {
   margin-right: auto;
 }
 
+/* User profile page: cream navbar + white card, never a dark Clerk portal */
+.cl-userProfile-root,
+.cl-userProfile-root .cl-rootBox {
+  background: transparent !important;
+  max-width: 56rem;
+  width: 100%;
+}
+
+.cl-navbar,
+.cl-navbarMobileMenuRow {
+  background: #fff8f0 !important;
+  background-color: #fff8f0 !important;
+  border-color: #f0e2d4 !important;
+  color: #2b2118 !important;
+}
+
+.cl-scrollBox,
+.cl-pageScrollBox,
+.cl-profilePage {
+  background-color: #ffffff !important;
+}
+
 /* Hide Clerk waitlist/auth chrome: "Secured by Clerk" + "Development mode" */
 .cl-badge,
 .cl-internal-b3fm6y,
