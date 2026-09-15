@@ -29,7 +29,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - Signed out: the **top-right Sign Up** chip opens Clerk sign-up. **Get early access** (hero and bottom) opens the waitlist — not a `mailto:` link.
 - After you join: **You’re on the list** (also at `/waitlist?joined=1`).
-- Signed in: the top-right chip becomes your Clerk profile button (UserButton).
+- Signed in: **Today’s List** (opens `/app`) sits next to your Clerk profile button (UserButton). Signed out (and while Clerk loads, or without Clerk keys) the header only shows **Sign Up**.
 - `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
 - `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can click the seed data.
 

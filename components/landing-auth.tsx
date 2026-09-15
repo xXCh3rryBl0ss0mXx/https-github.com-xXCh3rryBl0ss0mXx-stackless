@@ -40,53 +40,33 @@ function TodaysListChip({ className }: { className: string }) {
   );
 }
 
-function HeaderCtas({
-  className,
-  trailing,
-}: {
-  className: string;
-  trailing: ReactNode;
-}) {
+function SignUpChip({ className }: { className: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <TodaysListChip className={className} />
-      {trailing}
-    </div>
+    <Link className={className} href="/sign-up">
+      Sign Up
+    </Link>
   );
 }
 
 function ClerkHeaderCta({ className }: { className: string }) {
   const { isLoaded, isSignedIn } = useAuth();
 
-  // Always show Sign Up while Clerk loads or when signed out — never leave the header empty.
+  // Sign Up only while Clerk loads or when signed out — no /app chip, no empty gap.
   if (!isLoaded || !isSignedIn) {
-    return (
-      <HeaderCtas
-        className={className}
-        trailing={
-          <Link className={className} href="/sign-up">
-            Sign Up
-          </Link>
-        }
-      />
-    );
+    return <SignUpChip className={className} />;
   }
 
-  return <HeaderCtas className={className} trailing={<UserButton />} />;
+  return (
+    <div className="flex items-center gap-3">
+      <TodaysListChip className={className} />
+      <UserButton />
+    </div>
+  );
 }
 
 export function LandingHeaderCta({ className }: { className: string }) {
   if (!isClerkConfigured()) {
-    return (
-      <HeaderCtas
-        className={className}
-        trailing={
-          <Link className={className} href="/sign-up">
-            Sign Up
-          </Link>
-        }
-      />
-    );
+    return <SignUpChip className={className} />;
   }
 
   return <ClerkHeaderCta className={className} />;
