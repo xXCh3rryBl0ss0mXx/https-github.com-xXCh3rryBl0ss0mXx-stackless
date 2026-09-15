@@ -1,6 +1,6 @@
 "use client";
 
-import { SignUpButton, UserButton, useAuth, useClerk } from "@clerk/nextjs";
+import { UserButton, useAuth, useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { isClerkConfigured } from "@/lib/clerk";
@@ -38,11 +38,9 @@ function ClerkHeaderCta({ className }: { className: string }) {
   // Always show Sign Up while Clerk loads or when signed out — never leave the header empty.
   if (!isLoaded || !isSignedIn) {
     return (
-      <SignUpButton mode="modal" forceRedirectUrl={WAITLIST_AFTER_JOIN}>
-        <button type="button" className={className}>
-          Sign Up
-        </button>
-      </SignUpButton>
+      <Link className={className} href="/sign-up">
+        Sign Up
+      </Link>
     );
   }
 
