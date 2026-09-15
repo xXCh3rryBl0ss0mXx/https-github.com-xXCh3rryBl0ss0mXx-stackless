@@ -35,7 +35,7 @@ function WaitlistTrigger({
 function TodaysListChip({ className }: { className: string }) {
   return (
     <Link className={className} href="/app">
-      Today’s list
+      Today’s List
     </Link>
   );
 }
