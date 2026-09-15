@@ -25,7 +25,11 @@ export default function RootLayout({
           <ClerkProvider
             appearance={clerkAppearance}
             waitlistUrl="/waitlist"
+            signInUrl="/sign-in"
             signUpUrl="/sign-up"
+            afterSignOutUrl="/"
+            signInFallbackRedirectUrl="/"
+            signUpFallbackRedirectUrl="/"
           >
             {children}
           </ClerkProvider>

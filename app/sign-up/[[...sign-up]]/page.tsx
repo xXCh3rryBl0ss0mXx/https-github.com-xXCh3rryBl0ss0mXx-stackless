@@ -38,8 +38,8 @@ export default function SignUpPage() {
             <SignUp
               routing="path"
               path="/sign-up"
-              fallbackRedirectUrl="/waitlist?joined=1"
-              forceRedirectUrl="/waitlist?joined=1"
+              fallbackRedirectUrl="/"
+              forceRedirectUrl="/"
             />
           ) : (
             <p className="text-muted">
