@@ -34,7 +34,7 @@ function WaitlistTrigger({
 
 function TodaysListChip({ className }: { className: string }) {
   return (
-    <Link className={className} href="/app">
+    <Link className={`${className} shrink-0 whitespace-nowrap`} href="/app">
       Today’s List
     </Link>
   );
