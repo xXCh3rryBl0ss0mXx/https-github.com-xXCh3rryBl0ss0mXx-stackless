@@ -26,6 +26,7 @@
 
 html {
   min-height: 100%;
+  color-scheme: light only;
   background-color: var(--color-bg);
 }
 
@@ -53,4 +54,17 @@ body {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Keep Clerk step changes on the cream wash — no dark flash */
+.cl-modalBackdrop,
+.cl-internal-modal-backdrop {
+  background: rgba(255, 248, 240, 0.72) !important;
+}
+
+.cl-loading,
+.cl-spinner,
+.cl-formContainer,
+.cl-main {
+  background-color: #ffffff;
 }

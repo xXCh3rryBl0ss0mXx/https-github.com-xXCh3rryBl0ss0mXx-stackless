@@ -27,6 +27,17 @@ export const clerkAppearance = {
     rootBox: {
       width: "100%",
     },
+    // Soft peach dimmer instead of a black flash between Clerk steps
+    modalBackdrop: {
+      background: "rgba(255, 248, 240, 0.78)",
+      backdropFilter: "blur(6px)",
+    },
+    modalContent: {
+      background: "transparent",
+    },
+    spinner: {
+      color: "#ff8f66",
+    },
     cardBox: {
       boxShadow: "0 18px 40px rgba(80, 50, 20, 0.06)",
       border: `1px solid ${line}`,
