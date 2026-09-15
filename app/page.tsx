@@ -1,7 +1,10 @@
-const EARLY_ACCESS = "/waitlist";
+import { EarlyAccessButton, LandingHeaderCta } from "@/components/landing-auth";
+
+const chipClass =
+  "cursor-pointer rounded-full border border-line bg-white px-4 py-2 font-[inherit] text-[0.9rem] font-semibold text-muted no-underline";
 
 const btnClass =
-  "inline-block rounded-full bg-linear-to-br from-peach to-btn-end px-[1.35rem] py-[0.9rem] font-extrabold text-btn-ink no-underline shadow-[0_8px_20px_rgba(255,143,102,0.35)]";
+  "inline-block cursor-pointer rounded-full border-0 bg-linear-to-br from-peach to-btn-end px-[1.35rem] py-[0.9rem] font-[inherit] font-extrabold text-btn-ink no-underline shadow-[0_8px_20px_rgba(255,143,102,0.35)]";
 
 export default function Home() {
   return (
@@ -10,12 +13,7 @@ export default function Home() {
         <div className="text-[1.3rem] font-extrabold">
           Stack<span className="text-logo-accent">less</span>
         </div>
-        <a
-          className="rounded-full border border-line bg-white px-4 py-2 text-[0.9rem] font-semibold text-muted no-underline"
-          href={EARLY_ACCESS}
-        >
-          Get early access
-        </a>
+        <LandingHeaderCta className={chipClass} />
       </header>
 
       <section className="grid gap-7 rounded-[28px] border border-line bg-card px-6 py-8 shadow-[0_18px_40px_rgba(80,50,20,0.06)] min-[820px]:grid-cols-[1.1fr_0.9fr] min-[820px]:items-center min-[820px]:p-10">
@@ -30,9 +28,7 @@ export default function Home() {
             We remind you so clients don’t disappear — follow-ups drafted,
             unpaid invoices chased, pipeline kept warm.
           </p>
-          <a className={btnClass} id="go" href={EARLY_ACCESS}>
-            Get early access
-          </a>
+          <EarlyAccessButton className={btnClass} id="go" />
           <p className="mt-[0.8rem] text-[0.95rem] text-muted">
             <strong>Start at $99/month.</strong> Cancel anytime.
           </p>
@@ -115,9 +111,7 @@ export default function Home() {
           Keep your pipeline warm
         </h2>
         <p className="mb-4 text-muted">Start at $99/month. Cancel anytime.</p>
-        <a className={btnClass} href={EARLY_ACCESS}>
-          Get early access
-        </a>
+        <EarlyAccessButton className={btnClass} />
       </section>
 
       <footer className="mt-8 text-center text-[0.85rem] text-muted">

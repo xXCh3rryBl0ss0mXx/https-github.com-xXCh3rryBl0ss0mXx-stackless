@@ -10,7 +10,7 @@ const btnClass =
 const inputClass =
   "w-full rounded-full border border-line bg-white px-4 py-[0.85rem] text-[1rem] text-ink outline-none placeholder:text-muted focus:border-peach";
 
-function SuccessMessage() {
+export function WaitlistSuccess() {
   return (
     <div role="status" className="rounded-[20px] border border-line bg-white px-4 py-4">
       <p className="text-[1.1rem] font-extrabold">You’re on the list</p>
@@ -56,7 +56,7 @@ function ClerkWaitlistForm() {
   const shownError = submitError || fieldError || globalError || null;
 
   if (joined || waitlist.id) {
-    return <SuccessMessage />;
+    return <WaitlistSuccess />;
   }
 
   return (

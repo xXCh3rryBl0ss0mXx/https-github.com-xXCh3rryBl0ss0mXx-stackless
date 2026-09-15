@@ -2,30 +2,47 @@
 
 Marketing landing for Stackless — a quiet inbox helper for freelancers.
 
-Early access signup uses [Clerk](https://clerk.com) **Waitlist** mode (email in, you’re on the list). Google Sheets and the product dashboard are later steps — not this.
+Early access signup uses [Clerk](https://clerk.com) **Waitlist** mode (email in, you’re on the list). Use **email only** — no Google, no phone. Google Sheets and the product dashboard are later steps — not this.
+
+The Clerk application for this project is:
+
+`app_3JNTon4xdJiXqaN3kf6Ng4WI66p`
+
+Open it from [https://dashboard.clerk.com](https://dashboard.clerk.com) (it should show up in your app list as Stackless). Copy keys from **that** app, not a new one.
 
 ## Local preview
 
 ```bash
 npm install
+cp .env.example .env.local
+```
+
+Paste the two Clerk keys into `.env.local` (see below), then:
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). **Get early access** goes to `/waitlist` (not email). After a successful join you’ll see **You’re on the list**.
+Open [http://localhost:3000](http://localhost:3000).
 
-`npm run build` works **without** Clerk keys. The peach landing still shows. Signup only actually saves an email after you add the keys below. Vercel preview/production **do** need the keys, then a redeploy.
+- Signed out: **Get early access** (header chip, hero, and bottom) opens Clerk waitlist — not a `mailto:` link.
+- After you join: **You’re on the list** (also at `/waitlist?joined=1`).
+- Signed in: the header chip becomes your Clerk profile button (UserButton).
+- `/waitlist` is the same peach signup page if you open it directly.
+
+`npm run build` works **without** Clerk keys. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the keys. Vercel preview/production **do** need the keys, then a **Redeploy**.
 
 ## Clerk setup (do this once)
 
-You click these yourself in the Clerk website. Nobody else can create the app for you.
+You already have the app. You still have to turn on Waitlist and paste keys yourself.
 
-### 1. Make a Clerk account + app
+### 1. Open the Stackless Clerk app
 
-1. Open [https://dashboard.clerk.com](https://dashboard.clerk.com) and sign up (or log in).
-2. Click **Create application**.
-3. Name it `Stackless`.
-4. You can leave the extra login buttons (Google, etc.) off for now. Email is enough.
-5. Click **Create application**.
+1. Open [https://dashboard.clerk.com](https://dashboard.clerk.com) and log in.
+2. Open the app with id `app_3JNTon4xdJiXqaN3kf6Ng4WI66p`.
+3. Under user login methods, keep **Email** on. Leave Google, phone, and other social logins **off**.
+
+If you ever need a new app: **Create application** → name it `Stackless` → email only.
 
 ### 2. Turn on Waitlist
 
@@ -44,8 +61,6 @@ If you don’t see **Waitlist**, look for **Configure** → **Access mode** or *
 
 ### 4. Put the keys on your computer
 
-In this repo, copy the example file:
-
 ```bash
 cp .env.example .env.local
 ```
@@ -58,6 +73,8 @@ CLERK_SECRET_KEY=sk_test_...
 ```
 
 Save the file. Restart `npm run dev` if it was already running.
+
+Optional: if you install the Clerk CLI and run `npx clerk@latest auth login` in your own terminal, `npx clerk@latest env pull` can fill `.env.local` for you. Don’t commit that file.
 
 ### 5. Put the same keys on Vercel
 

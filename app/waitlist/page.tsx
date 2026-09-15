@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EarlyAccessForm } from "@/components/early-access-form";
+import { EarlyAccessForm, WaitlistSuccess } from "@/components/early-access-form";
 
 export const metadata: Metadata = {
   title: "Get early access — Stackless",
   description: "Join the Stackless waitlist. We’ll email you when a spot opens.",
 };
 
-export default function WaitlistPage() {
+export default async function WaitlistPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ joined?: string }>;
+}) {
+  const { joined } = await searchParams;
+
   return (
     <div className="mx-auto w-[min(960px,calc(100%-2rem))] pt-6 pb-12">
       <header className="mb-8 flex items-center justify-between">
@@ -29,11 +35,17 @@ export default function WaitlistPage() {
         <h1 className="mb-3 text-[clamp(1.7rem,4vw,2.2rem)] leading-[1.15] font-bold tracking-[-0.03em]">
           Get early access
         </h1>
-        <p className="mb-6 text-muted">
-          Drop your email. We’ll save you a spot and write when Stackless is
-          ready.
-        </p>
-        <EarlyAccessForm />
+        {joined ? (
+          <WaitlistSuccess />
+        ) : (
+          <>
+            <p className="mb-6 text-muted">
+              Drop your email. We’ll save you a spot and write when Stackless is
+              ready.
+            </p>
+            <EarlyAccessForm />
+          </>
+        )}
       </section>
     </div>
   );
