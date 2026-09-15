@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #fff8f0;
+  --color-ink: #2b2118;
+  --color-muted: #6f5b4a;
+  --color-card: #ffffff;
+  --color-peach: #ffb48a;
+  --color-mint: #7fd6b0;
+  --color-lilac: #c4b5fd;
+  --color-line: #f0e2d4;
+  --color-logo-accent: #e07a3a;
+  --color-badge-bg: #fff3e8;
+  --color-badge-fg: #c45c1a;
+  --color-btn-end: #ff8f66;
+  --color-btn-ink: #3a1d0c;
+  --color-bubble: #4a3b2f;
+  --color-follow-bg: #dff7ec;
+  --color-follow-fg: #1f7a55;
+  --color-invoice-bg: #f3e8ff;
+  --color-invoice-fg: #6d28d9;
+  --color-cta-line: #e7c9b0;
+  --color-phone-wash: #fff9f3;
+  --font-sans: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 180, 138, 0.35), transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(196, 181, 253, 0.3), transparent 35%),
+    var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  min-height: 100vh;
+}
