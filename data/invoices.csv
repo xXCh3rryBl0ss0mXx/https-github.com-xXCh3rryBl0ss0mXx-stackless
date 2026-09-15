@@ -1,0 +1,3 @@
+id,client_name,client_email,invoice_number,amount_usd,status,due_date,last_nudged_at,payment_link,created_at
+inv_001,Sam Lee,sam@example.com,1042,850,open,2026-09-01,2026-09-10,https://pay.example.com/1042,2026-08-15
+inv_002,Alex Rivera,alex@example.com,1043,1200,paid,2026-08-20,,https://pay.example.com/1043,2026-08-01

@@ -32,27 +32,60 @@ function WaitlistTrigger({
   );
 }
 
+function TodaysListChip({ className }: { className: string }) {
+  return (
+    <Link className={className} href="/app">
+      Today’s list
+    </Link>
+  );
+}
+
+function HeaderCtas({
+  className,
+  trailing,
+}: {
+  className: string;
+  trailing: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <TodaysListChip className={className} />
+      {trailing}
+    </div>
+  );
+}
+
 function ClerkHeaderCta({ className }: { className: string }) {
   const { isLoaded, isSignedIn } = useAuth();
 
   // Always show Sign Up while Clerk loads or when signed out — never leave the header empty.
   if (!isLoaded || !isSignedIn) {
     return (
-      <Link className={className} href="/sign-up">
-        Sign Up
-      </Link>
+      <HeaderCtas
+        className={className}
+        trailing={
+          <Link className={className} href="/sign-up">
+            Sign Up
+          </Link>
+        }
+      />
     );
   }
 
-  return <UserButton />;
+  return <HeaderCtas className={className} trailing={<UserButton />} />;
 }
 
 export function LandingHeaderCta({ className }: { className: string }) {
   if (!isClerkConfigured()) {
     return (
-      <Link className={className} href="/sign-up">
-        Sign Up
-      </Link>
+      <HeaderCtas
+        className={className}
+        trailing={
+          <Link className={className} href="/sign-up">
+            Sign Up
+          </Link>
+        }
+      />
     );
   }
 

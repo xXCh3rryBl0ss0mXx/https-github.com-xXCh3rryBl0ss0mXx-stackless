@@ -2,7 +2,9 @@
 
 Marketing landing for Stackless — a quiet inbox helper for freelancers.
 
-Early access signup uses [Clerk](https://clerk.com) **Waitlist** mode (email in, you’re on the list). Use **email only** — no Google, no phone. Google Sheets and the product dashboard are later steps — not this.
+Early access signup uses [Clerk](https://clerk.com) **Waitlist** mode (email in, you’re on the list). Use **email only** — no Google, no phone.
+
+The paid product loop lives at **`/app`** (Clerk-gated when keys are set): follow-ups and overdue invoices, editable drafts, mark sent, skip.
 
 The Clerk application for this project is:
 
@@ -29,8 +31,29 @@ Open [http://localhost:3000](http://localhost:3000).
 - After you join: **You’re on the list** (also at `/waitlist?joined=1`).
 - Signed in: the top-right chip becomes your Clerk profile button (UserButton).
 - `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
+- `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can click the seed data.
 
 `npm run build` works **without** Clerk keys. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the keys. Vercel preview/production **do** need the keys, then a **Redeploy**.
+
+## Today’s list (`/app`)
+
+Two queues: people whose follow-up date is due, and open invoices past their due date. Each row has an editable draft. **Save draft**, **Mark sent**, and **Skip** all go through `DataStore` (`lib/data/types.ts`). Copy the text into your real email — Stackless does not send mail yet.
+
+Until a Google Sheet is connected, the default store is the seed CSVs in [`data/`](data/). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy.
+
+### Google Sheets (later — not required)
+
+Leave `STACKLESS_DATA_STORE=memory`. Setting it to `sheets` today throws a clear error; there are no fake API keys.
+
+When you want a real Sheet:
+
+1. Copy `data/leads.csv`, `data/invoices.csv`, and `data/nudge_log.csv` into one Google Sheet (tabs **leads**, **invoices**, **nudge_log**). Steps: [`data/README.md`](data/README.md).
+2. Make a Google Cloud service account and **share the Sheet** with that email (Editor).
+3. Put these in `.env.local` / Vercel (paste yours — no samples):
+   - `GOOGLE_SHEETS_SPREADSHEET_ID`
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+   - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+4. Implement `SheetsDataStore` and set `STACKLESS_DATA_STORE=sheets`.
 
 ## Clerk setup (do this once)
 
