@@ -13,6 +13,12 @@ const line = "#f0e2d4";
  * edges (“dents”). Put the border/radius on cardBox and paint footer white.
  */
 export const clerkAppearance = {
+  layout: {
+    // Prefer no marketing links in the component chrome
+    termsPageUrl: undefined,
+    privacyPageUrl: undefined,
+    helpPageUrl: undefined,
+  },
   variables: {
     colorPrimary: "#ff8f66",
     colorBackground: pageWash, // cream during step loads — avoids white flash
@@ -99,7 +105,18 @@ export const clerkAppearance = {
       color: "#e07a3a",
     },
     footerPages: {
-      background: cardSurface,
+      display: "none",
+    },
+    // "Secured by Clerk" / logo row
+    logoBox: {
+      display: "none",
+    },
+    logoImage: {
+      display: "none",
+    },
+    // "Development mode" badge
+    badge: {
+      display: "none",
     },
     identityPreview: {
       background: pageWash,
