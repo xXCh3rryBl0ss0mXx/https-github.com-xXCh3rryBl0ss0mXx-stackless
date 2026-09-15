@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
 import { isClerkConfigured } from "@/lib/clerk";
+import { APP_PATH, CLERK_SIGN_IN_PATH } from "@/lib/clerk-paths";
 
 export const metadata: Metadata = {
   title: "Sign up — Stackless",
@@ -38,8 +39,8 @@ export default function SignUpPage() {
             <SignUp
               routing="path"
               path="/sign-up"
-              fallbackRedirectUrl="/"
-              forceRedirectUrl="/"
+              signInUrl={CLERK_SIGN_IN_PATH}
+              fallbackRedirectUrl={APP_PATH}
             />
           ) : (
             <p className="text-muted">

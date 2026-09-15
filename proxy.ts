@@ -1,5 +1,10 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import {
+  CLERK_SIGN_IN_PATH,
+  CLERK_SIGN_UP_PATH,
+  peachSignInUrl,
+} from "@/lib/clerk-paths";
 
 // Next.js 16 uses proxy.ts for the same job as middleware.ts on older Next.
 // Public marketing pages stay public; this only wires Clerk when keys exist
@@ -7,8 +12,23 @@ import { NextResponse } from "next/server";
 const hasPublishableKey =
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_") ?? false;
 
+const isAppRoute = createRouteMatcher(["/app(.*)"]);
+
+const clerkAuth = clerkMiddleware(
+  async (auth, req) => {
+    if (!isAppRoute(req)) return;
+    await auth.protect({
+      unauthenticatedUrl: peachSignInUrl(req.url),
+    });
+  },
+  {
+    signInUrl: CLERK_SIGN_IN_PATH,
+    signUpUrl: CLERK_SIGN_UP_PATH,
+  },
+);
+
 export default hasPublishableKey
-  ? clerkMiddleware()
+  ? clerkAuth
   : function passThrough() {
       return NextResponse.next();
     };
