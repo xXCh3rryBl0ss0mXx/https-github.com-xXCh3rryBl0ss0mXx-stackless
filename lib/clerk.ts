@@ -124,3 +124,40 @@ export const clerkAppearance = {
     },
   },
 };
+
+/** Wider peach card for `<UserProfile />` — same colors as sign-in, not a dark portal. */
+export const clerkUserProfileAppearance = {
+  layout: clerkAppearance.layout,
+  variables: clerkAppearance.variables,
+  elements: {
+    ...clerkAppearance.elements,
+    rootBox: {
+      width: "100%",
+      maxWidth: "56rem",
+      margin: "0 auto",
+      background: "transparent",
+      display: "flex",
+      justifyContent: "center",
+    },
+    navbar: {
+      background: pageWash,
+      borderColor: line,
+    },
+    navbarButton: {
+      color: "#2b2118",
+    },
+    navbarButtonIcon: {
+      color: "#6f5b4a",
+    },
+    scrollBox: {
+      background: cardSurface,
+      boxShadow: "none",
+    },
+    pageScrollBox: {
+      background: cardSurface,
+    },
+    profileSectionTitle: {
+      color: "#2b2118",
+    },
+  },
+};

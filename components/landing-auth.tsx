@@ -1,8 +1,9 @@
 "use client";
 
-import { UserButton, useAuth, useClerk } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { StacklessUserButton } from "@/components/stackless-user-button";
 import { isClerkConfigured } from "@/lib/clerk";
 
 const WAITLIST_AFTER_JOIN = "/waitlist?joined=1";
@@ -59,7 +60,7 @@ function ClerkHeaderCta({ className }: { className: string }) {
   return (
     <div className="flex items-center gap-3">
       <TodaysListChip className={className} />
-      <UserButton />
+      <StacklessUserButton />
     </div>
   );
 }
