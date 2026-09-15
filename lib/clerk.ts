@@ -26,7 +26,11 @@ export const clerkAppearance = {
   elements: {
     rootBox: {
       width: "100%",
-      background: pageWash,
+      maxWidth: "28rem",
+      margin: "0 auto",
+      background: "transparent",
+      display: "flex",
+      justifyContent: "center",
     },
     // Soft peach dimmer instead of a black flash between Clerk steps
     modalBackdrop: {
@@ -34,7 +38,7 @@ export const clerkAppearance = {
       backdropFilter: "blur(6px)",
     },
     modalContent: {
-      background: pageWash,
+      background: "transparent",
     },
     spinner: {
       color: "#ff8f66",

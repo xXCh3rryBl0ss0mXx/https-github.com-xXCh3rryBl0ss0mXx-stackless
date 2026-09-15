@@ -56,20 +56,26 @@ body {
   border: 0;
 }
 
-/* Keep Clerk step changes on the cream wash — no dark flash */
+/* Keep Clerk step changes on the cream wash — no dark/white column flash */
 .cl-modalBackdrop,
 .cl-internal-modal-backdrop {
   background: rgba(255, 248, 240, 0.72) !important;
 }
 
-/* Loading/step shells match the page wash; the card itself stays white via appearance */
+.cl-rootBox {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  background: transparent !important;
+}
+
 .cl-loading,
-.cl-spinner,
-.cl-modalContent {
+.cl-spinner {
   background-color: #fff8f0 !important;
 }
 
 .cl-card,
 .cl-cardBox {
   background-color: #ffffff;
+  margin-left: auto;
+  margin-right: auto;
 }
