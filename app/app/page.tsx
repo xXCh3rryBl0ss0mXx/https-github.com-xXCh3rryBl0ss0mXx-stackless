@@ -24,7 +24,7 @@ export default async function AppPage() {
   return (
     <main>
       <div className="mb-6">
-        <div className="mb-[0.9rem] inline-block rounded-full bg-badge-bg px-3 py-[0.3rem] text-[0.8rem] font-bold text-badge-fg">
+        <div className="mb-[0.9rem] inline-block whitespace-nowrap rounded-full bg-badge-bg px-3 py-[0.3rem] text-[0.8rem] font-bold text-badge-fg">
           Today’s List
         </div>
         <h1 className="mb-2 text-[clamp(1.7rem,4vw,2.2rem)] leading-[1.15] font-bold tracking-[-0.03em]">
