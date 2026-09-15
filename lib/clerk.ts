@@ -15,7 +15,7 @@ const line = "#f0e2d4";
 export const clerkAppearance = {
   variables: {
     colorPrimary: "#ff8f66",
-    colorBackground: cardSurface,
+    colorBackground: pageWash, // cream during step loads — avoids white flash
     colorInputBackground: cardSurface,
     colorText: "#2b2118",
     colorTextSecondary: "#6f5b4a",
@@ -26,6 +26,7 @@ export const clerkAppearance = {
   elements: {
     rootBox: {
       width: "100%",
+      background: pageWash,
     },
     // Soft peach dimmer instead of a black flash between Clerk steps
     modalBackdrop: {
@@ -33,7 +34,7 @@ export const clerkAppearance = {
       backdropFilter: "blur(6px)",
     },
     modalContent: {
-      background: "transparent",
+      background: pageWash,
     },
     spinner: {
       color: "#ff8f66",

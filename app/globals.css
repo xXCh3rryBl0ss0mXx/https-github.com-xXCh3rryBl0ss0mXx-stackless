@@ -62,9 +62,14 @@ body {
   background: rgba(255, 248, 240, 0.72) !important;
 }
 
+/* Loading/step shells match the page wash; the card itself stays white via appearance */
 .cl-loading,
 .cl-spinner,
-.cl-formContainer,
-.cl-main {
+.cl-modalContent {
+  background-color: #fff8f0 !important;
+}
+
+.cl-card,
+.cl-cardBox {
   background-color: #ffffff;
 }
