@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 export default function SignInPage() {
   return (
-    <div className="mx-auto flex min-h-screen w-[min(960px,calc(100%-2rem))] flex-col pt-6 pb-16">
-      <header className="mb-8 flex items-center justify-between">
+    <div className="flex min-h-screen w-full flex-col">
+      <header className="mx-auto flex w-[min(960px,calc(100%-2rem))] items-center justify-between pt-6 pb-4">
         <Link className="text-[1.3rem] font-extrabold text-ink no-underline" href="/">
           Stack<span className="text-logo-accent">less</span>
         </Link>
@@ -22,13 +22,15 @@ export default function SignInPage() {
           Back home
         </Link>
       </header>
-      <section className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center">
-        {isClerkConfigured() ? (
-          <SignIn routing="path" path="/sign-in" />
-        ) : (
-          <p className="text-center text-muted">Sign in isn’t connected yet.</p>
-        )}
-      </section>
+      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 pb-16">
+        <div className="flex w-full justify-center">
+          {isClerkConfigured() ? (
+            <SignIn routing="path" path="/sign-in" />
+          ) : (
+            <p className="text-center text-muted">Sign in isn’t connected yet.</p>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
