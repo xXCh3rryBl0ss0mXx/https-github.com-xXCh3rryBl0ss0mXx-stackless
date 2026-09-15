@@ -74,7 +74,14 @@ CLERK_SECRET_KEY=sk_test_...
 
 Save the file. Restart `npm run dev` if it was already running.
 
-Optional: if you install the Clerk CLI and run `npx clerk@latest auth login` in your own terminal, `npx clerk@latest env pull` can fill `.env.local` for you. Don’t commit that file.
+Optional: on **your** computer (this needs a browser login the cloud agent cannot finish):
+
+```bash
+npx clerk@latest auth login
+npx clerk@latest init --app app_3JNTon4xdJiXqaN3kf6Ng4WI66p
+```
+
+That links this repo to the Stackless Clerk app and can write `.env.local`. Don’t commit that file. Or skip the CLI and paste the two keys by hand as above.
 
 ### 5. Put the same keys on Vercel
 
