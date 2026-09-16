@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { MemoryDataStore } from "../data/memory-store";
 import { fixtureInvoices, fixtureLeads } from "../data/test-fixtures";
 import { MISSING_API_KEY, MISSING_FROM_EMAIL, readResendConfig } from "./config";
-import { deliverNudgeDraft } from "./deliver";
+import { deliverNudgeDraft, nudgeIdempotencyKey } from "./deliver";
 import { sendNudgeEmail, type EmailClient } from "./send";
 import { nudgeEmailHtml, nudgeEmailText, nudgeSubject } from "./templates";
 
@@ -116,6 +116,51 @@ describe("sendNudgeEmail", () => {
   });
 });
 
+describe("nudgeIdempotencyKey", () => {
+  it("is stable for the same to, subject, and draft", () => {
+    const a = nudgeIdempotencyKey("nudge_1", "sam@example.com", "Quick check-in", "Hey");
+    const b = nudgeIdempotencyKey("nudge_1", "sam@example.com", "Quick check-in", "Hey");
+    assert.equal(a, b);
+    assert.match(a, /^nudge\/nudge_1\/[0-9a-f]{16}$/);
+  });
+
+  it("trims to and draft so whitespace-only edits share a key with the Resend body", () => {
+    const trimmed = nudgeIdempotencyKey(
+      "nudge_1",
+      "sam@example.com",
+      "Quick check-in",
+      "Hey",
+    );
+    const padded = nudgeIdempotencyKey(
+      "nudge_1",
+      "  sam@example.com  ",
+      "Quick check-in",
+      "  Hey  ",
+    );
+    assert.equal(trimmed, padded);
+  });
+
+  it("changes when the draft, recipient, or subject changes", () => {
+    const base = nudgeIdempotencyKey("nudge_1", "sam@example.com", "Quick check-in", "Hey");
+    assert.notEqual(
+      base,
+      nudgeIdempotencyKey("nudge_1", "sam@example.com", "Quick check-in", "Hey edited"),
+    );
+    assert.notEqual(
+      base,
+      nudgeIdempotencyKey("nudge_1", "other@example.com", "Quick check-in", "Hey"),
+    );
+    assert.notEqual(
+      base,
+      nudgeIdempotencyKey("nudge_1", "sam@example.com", "Invoice reminder", "Hey"),
+    );
+    assert.notEqual(
+      base,
+      nudgeIdempotencyKey("nudge_2", "sam@example.com", "Quick check-in", "Hey"),
+    );
+  });
+});
+
 describe("deliverNudgeDraft", () => {
   function storeWithDraft() {
     return new MemoryDataStore({
@@ -171,6 +216,72 @@ describe("deliverNudgeDraft", () => {
     const result = await deliverNudgeDraft(store, draft, "2026-09-15", { env: {} });
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.error, MISSING_API_KEY);
+    const after = (await store.listNudges()).find((row) => row.id === draft.id);
+    assert.equal(after?.status, "draft");
+  });
+
+  it("keys Resend idempotency on payload so an edited draft can send after a prior attempt", async () => {
+    const store = storeWithDraft();
+    const draft = await store.createNudgeDraft({
+      kind: "follow_up",
+      relatedId: "lead_001",
+      draftText: "Hey Sam — first try.",
+    });
+    const firstCalls: unknown[] = [];
+    const first = await deliverNudgeDraft(store, draft, "2026-09-15", {
+      env,
+      client: mockClient({ data: null, error: { message: "rate limited" } }, firstCalls),
+    });
+    assert.equal(first.ok, false);
+    const afterFail = (await store.listNudges()).find((row) => row.id === draft.id);
+    assert.equal(afterFail?.status, "draft");
+
+    const edited = await store.updateNudgeDraft(draft.id, {
+      draftText: "Hey Sam — rewritten.",
+    });
+    const secondCalls: unknown[] = [];
+    const second = await deliverNudgeDraft(store, edited, "2026-09-15", {
+      env,
+      client: mockClient({ data: { id: "email_ok" }, error: null }, secondCalls),
+    });
+    assert.equal(second.ok, true);
+
+    const firstKey = (firstCalls[0] as { options: { idempotencyKey: string } }).options
+      .idempotencyKey;
+    const secondKey = (secondCalls[0] as { options: { idempotencyKey: string } }).options
+      .idempotencyKey;
+    assert.notEqual(firstKey, secondKey);
+    assert.equal(
+      secondKey,
+      nudgeIdempotencyKey(draft.id, "sam@example.com", "Quick check-in", edited.draftText),
+    );
+
+    const after = (await store.listNudges()).find((row) => row.id === draft.id);
+    assert.equal(after?.status, "sent");
+    assert.equal(after?.sentAt, "2026-09-15");
+  });
+
+  it("reuses the same idempotency key for an identical retry (double-click / cron)", async () => {
+    const store = storeWithDraft();
+    const draft = await store.createNudgeDraft({
+      kind: "invoice",
+      relatedId: "inv_001",
+      draftText: "Hi Sam — reminder.",
+    });
+    const calls: unknown[] = [];
+    const failing = mockClient({ data: null, error: { message: "rate limited" } }, calls);
+    await deliverNudgeDraft(store, draft, "2026-09-15", { env, client: failing });
+    const stillDraft = (await store.listNudges()).find((row) => row.id === draft.id);
+    await deliverNudgeDraft(store, stillDraft!, "2026-09-15", { env, client: failing });
+    assert.equal(calls.length, 2);
+    const keys = calls.map(
+      (call) => (call as { options: { idempotencyKey: string } }).options.idempotencyKey,
+    );
+    assert.equal(keys[0], keys[1]);
+    assert.equal(
+      keys[0],
+      nudgeIdempotencyKey(draft.id, "sam@example.com", "Invoice reminder", draft.draftText),
+    );
     const after = (await store.listNudges()).find((row) => row.id === draft.id);
     assert.equal(after?.status, "draft");
   });

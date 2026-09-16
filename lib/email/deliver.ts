@@ -1,5 +1,27 @@
+import { createHash } from "node:crypto";
 import type { DataStore, Nudge } from "@/lib/data/types";
 import { sendNudgeEmail, type SendNudgeDeps, type SendNudgeResult } from "./send";
+import { nudgeSubject } from "./templates";
+
+const IDEMPOTENCY_HASH_LEN = 16;
+
+/**
+ * Resend keys are unique per HTTP method + endpoint for 24h; a changed body
+ * with the same key is rejected. Hash the payload so identical retries stay
+ * idempotent and edits (or a different recipient) get a fresh key.
+ */
+export function nudgeIdempotencyKey(
+  nudgeId: string,
+  to: string,
+  subject: string,
+  draftText: string,
+): string {
+  const hash = createHash("sha256")
+    .update(`${to.trim()}|${subject}|${draftText.trim()}`)
+    .digest("hex")
+    .slice(0, IDEMPOTENCY_HASH_LEN);
+  return `nudge/${nudgeId}/${hash}`;
+}
 
 export type RecipientResult =
   | { ok: true; email: string }
@@ -54,7 +76,12 @@ export async function deliverNudgeDraft(
       kind: nudge.kind,
       to: recipient.email,
       draftText: nudge.draftText,
-      idempotencyKey: `nudge/${nudge.id}`,
+      idempotencyKey: nudgeIdempotencyKey(
+        nudge.id,
+        recipient.email,
+        nudgeSubject(nudge.kind),
+        nudge.draftText,
+      ),
     },
     deps,
   );
