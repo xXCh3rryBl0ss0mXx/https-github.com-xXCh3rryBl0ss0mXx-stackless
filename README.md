@@ -32,7 +32,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - Signed in: **Today’s List** (opens `/app`) sits next to your Clerk profile button (UserButton). Signed out (and while Clerk loads, or without Clerk keys) the header only shows **Sign Up**.
 - The profile menu still has **Manage account** and **Sign out**. Manage account opens the peach `/account` page (Clerk profile options, not a black Clerk portal). Sign out still signs you out.
 - `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
-- `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can click the seed data. With keys, signed-out visits go to the peach `/sign-in` page (not Clerk’s hosted Account Portal), then back to `/app`. Unsigned `/account` visits go to the same peach Sign In, then back to `/account`.
+- `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can add people and invoices. With keys, signed-out visits go to the peach `/sign-in` page (not Clerk’s hosted Account Portal), then back to `/app`. Unsigned `/account` visits go to the same peach Sign In, then back to `/account`.
 
 `npm run build` works **without** Clerk keys. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the keys. Vercel preview/production **do** need the keys, then a **Redeploy**.
 
@@ -44,7 +44,7 @@ Two queues: people whose follow-up date is due, and open invoices past their due
 
 **Send email** asks you to confirm, then sends through [Resend](https://resend.com) to the lead/client address. Subjects are **Quick check-in** (follow-ups) and **Invoice reminder** (invoices); the body is the draft you edited. The nudge is marked `sent` (with `sentAt`) **only if Resend accepts the mail**. If it fails — missing keys, bad from-address, Resend error — the draft stays a draft and the peach error on the card tells you why. Nothing is sent on a schedule yet (no Vercel Cron in this version).
 
-Until a Google Sheet is connected, the default store is the seed CSVs in [`data/`](data/). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy.
+Until a Google Sheet is connected, the default store is in-memory and **starts empty** — add a person or an invoice from `/app`. The CSVs in [`data/`](data/) are header rows only (a Sheets copy can be empty headers too). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy.
 
 ### Resend (required to actually send)
 
@@ -67,7 +67,7 @@ Leave `STACKLESS_DATA_STORE=memory` until a Sheet is connected. Preview and Prod
 
 When you want a real Sheet:
 
-1. Copy `data/leads.csv`, `data/invoices.csv`, and `data/nudge_log.csv` into one Google Sheet (tabs **leads**, **invoices**, **nudge_log**). Full steps: [`data/README.md`](data/README.md).
+1. Copy `data/leads.csv`, `data/invoices.csv`, and `data/nudge_log.csv` into one Google Sheet (tabs **leads**, **invoices**, **nudge_log**). Those files are header rows only — a Sheets copy can start empty too. Full steps: [`data/README.md`](data/README.md).
 2. In [Google Cloud Console](https://console.cloud.google.com/), create a project (or pick one) → **APIs & Services** → enable **Google Sheets API**.
 3. **IAM & Admin** → **Service Accounts** → **Create service account**. Open it → **Keys** → **Add key** → JSON. Open the JSON locally; you need `client_email` and `private_key`. Do not commit the file.
 4. Open the Sheet → **Share** → paste the service account email → **Editor** → uncheck “notify” → Share.
@@ -78,7 +78,7 @@ When you want a real Sheet:
 6. Set `STACKLESS_DATA_STORE=sheets`.
 7. Restart `npm run dev` (or Redeploy on Vercel). `/app` reads and writes the three tabs.
 
-To go back to seed data, set `STACKLESS_DATA_STORE=memory` again.
+To go back to the in-memory store (empty until you add records, or whatever is in `.data/local-store.json`), set `STACKLESS_DATA_STORE=memory` again.
 
 ## Clerk setup (do this once)
 

@@ -37,7 +37,7 @@ export function AllRecords({
         <h2 className="mb-1 text-[1.5rem] font-bold tracking-[-0.02em]">Your people</h2>
         <p className="mb-4 text-muted">Everyone you’re tracking. Edit a date or status anytime.</p>
         {leads.length === 0 ? (
-          <p className="rounded-[20px] border border-line bg-card p-[1.15rem] text-muted">
+          <p className="rounded-[20px] border border-line bg-follow-bg p-[1.15rem] text-muted">
             No people yet. Add someone above.
           </p>
         ) : (
@@ -53,7 +53,7 @@ export function AllRecords({
         <h2 className="mb-1 text-[1.5rem] font-bold tracking-[-0.02em]">Your invoices</h2>
         <p className="mb-4 text-muted">Open, paid, and void. Edit to keep the overdue queue honest.</p>
         {invoices.length === 0 ? (
-          <p className="rounded-[20px] border border-line bg-card p-[1.15rem] text-muted">
+          <p className="rounded-[20px] border border-line bg-badge-bg p-[1.15rem] text-muted">
             No invoices yet. Add one above.
           </p>
         ) : (

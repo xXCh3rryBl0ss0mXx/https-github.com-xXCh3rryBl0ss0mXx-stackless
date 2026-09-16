@@ -9,7 +9,8 @@ const globalForStore = globalThis as unknown as {
 };
 
 /**
- * Default is the seed-backed store so the UI runs without Google credentials.
+ * Default is the in-memory store so the UI runs without Google credentials.
+ * It starts empty until you add people and invoices (or load `.data/local-store.json`).
  * Set STACKLESS_DATA_STORE=sheets after sharing a Sheet with the service account.
  */
 export function getDataStore(): DataStore {

@@ -1,7 +1,6 @@
 import { invoiceIsOpen, invoiceIsOverdue, leadNeedsFollowUp, newestFirst } from "./filters";
 import { nextPrefixedId } from "./ids";
 import { applyInvoiceWrite, applyLeadWrite } from "./record-input";
-import { seedInvoices, seedLeads, seedNudges } from "./seed";
 import { todayStamp } from "../today";
 import type {
   DataStore,
@@ -28,9 +27,9 @@ export class MemoryDataStore implements DataStore {
     seed?: StoreSnapshot,
     persist?: (snapshot: StoreSnapshot) => void,
   ) {
-    this.leads = clone(seed?.leads ?? seedLeads);
-    this.invoices = clone(seed?.invoices ?? seedInvoices);
-    this.nudges = clone(seed?.nudges ?? seedNudges);
+    this.leads = clone(seed?.leads ?? []);
+    this.invoices = clone(seed?.invoices ?? []);
+    this.nudges = clone(seed?.nudges ?? []);
     this.persist = persist;
   }
 

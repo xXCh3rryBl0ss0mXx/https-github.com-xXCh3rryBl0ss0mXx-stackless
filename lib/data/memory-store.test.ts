@@ -4,17 +4,26 @@ import { followUpDraftText, invoiceDraftText } from "./draft-text";
 import { MemoryDataStore } from "./memory-store";
 import { invoiceWriteFromForm, leadWriteFromForm } from "./record-input";
 import { seedInvoices, seedLeads, seedNudges } from "./seed";
+import { fixtureInvoices, fixtureLeads, fixtureSnapshot } from "./test-fixtures";
 import type { StoreSnapshot } from "./types";
 
 function freshStore() {
-  return new MemoryDataStore({
-    leads: seedLeads,
-    invoices: seedInvoices,
-    nudges: seedNudges,
-  });
+  return new MemoryDataStore(fixtureSnapshot());
 }
 
 describe("MemoryDataStore", () => {
+  it("starts empty when no seed is provided", async () => {
+    assert.deepEqual(seedLeads, []);
+    assert.deepEqual(seedInvoices, []);
+    assert.deepEqual(seedNudges, []);
+    const store = new MemoryDataStore();
+    assert.deepEqual(await store.listLeads(), []);
+    assert.deepEqual(await store.listInvoices(), []);
+    assert.deepEqual(await store.listNudges(), []);
+    assert.deepEqual(await store.listLeadsNeedingFollowUp("2026-09-15"), []);
+    assert.deepEqual(await store.listOverdueInvoices("2026-09-15"), []);
+  });
+
   it("lists leads due on or before today, including those with no date", async () => {
     const due = await freshStore().listLeadsNeedingFollowUp("2026-09-15");
     assert.deepEqual(
@@ -47,11 +56,7 @@ describe("MemoryDataStore", () => {
   });
 
   it("creates, edits, sends, and skips drafts through the DataStore boundary", async () => {
-    const store = new MemoryDataStore({
-      leads: seedLeads,
-      invoices: seedInvoices,
-      nudges: [],
-    });
+    const store = new MemoryDataStore(fixtureSnapshot({ nudges: [] }));
     const draft = await store.createNudgeDraft({
       kind: "follow_up",
       relatedId: "lead_002",
@@ -144,7 +149,7 @@ describe("MemoryDataStore", () => {
   it("deletes leads and their draft nudges, leaving sent history", async () => {
     const writes: StoreSnapshot[] = [];
     const store = new MemoryDataStore(
-      { leads: seedLeads, invoices: seedInvoices, nudges: seedNudges },
+      fixtureSnapshot(),
       (snapshot) => writes.push(snapshot),
     );
     await store.deleteLead("lead_001");
@@ -190,7 +195,7 @@ describe("MemoryDataStore", () => {
   it("persists mutations through the optional snapshot writer", async () => {
     const writes: StoreSnapshot[] = [];
     const store = new MemoryDataStore(
-      { leads: seedLeads, invoices: seedInvoices, nudges: [] },
+      fixtureSnapshot({ nudges: [] }),
       (snapshot) => writes.push(snapshot),
     );
     await store.createNudgeDraft({
@@ -206,11 +211,11 @@ describe("MemoryDataStore", () => {
 describe("draft copy", () => {
   it("writes a simple follow-up and invoice reminder", () => {
     assert.equal(
-      followUpDraftText(seedLeads[0]),
+      followUpDraftText(fixtureLeads[0]),
       "Hey Sam — just checking in on this: Sent website quote Monday. Happy to tweak the scope if you want. Want to hop on a quick call this week?",
     );
     assert.equal(
-      invoiceDraftText(seedInvoices[0]),
+      invoiceDraftText(fixtureInvoices[0]),
       "Hi Sam — friendly reminder that invoice #1042 ($850) is still open. I can resend the payment link if that helps. Thanks!",
     );
   });
