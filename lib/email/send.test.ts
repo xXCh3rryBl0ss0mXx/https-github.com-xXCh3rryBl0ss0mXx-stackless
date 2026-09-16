@@ -236,7 +236,9 @@ describe("deliverNudgeDraft", () => {
     const afterFail = (await store.listNudges()).find((row) => row.id === draft.id);
     assert.equal(afterFail?.status, "draft");
 
-    const edited = await store.updateNudgeDraft(draft.id, "Hey Sam — rewritten.");
+    const edited = await store.updateNudgeDraft(draft.id, {
+      draftText: "Hey Sam — rewritten.",
+    });
     const secondCalls: unknown[] = [];
     const second = await deliverNudgeDraft(store, edited, "2026-09-15", {
       env,
