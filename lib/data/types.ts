@@ -86,8 +86,12 @@ export type DataStore = {
   getInvoice(id: string): Promise<Invoice | null>;
   createLead(input: LeadWrite): Promise<Lead>;
   updateLead(id: string, input: LeadWrite): Promise<Lead>;
+  /** Removes the lead and any draft nudges for it. Sent/skipped history stays. */
+  deleteLead(id: string): Promise<void>;
   createInvoice(input: InvoiceWrite): Promise<Invoice>;
   updateInvoice(id: string, input: InvoiceWrite): Promise<Invoice>;
+  /** Removes the invoice and any draft nudges for it. Sent/skipped history stays. */
+  deleteInvoice(id: string): Promise<void>;
   createNudgeDraft(input: {
     kind: NudgeKind;
     relatedId: string;

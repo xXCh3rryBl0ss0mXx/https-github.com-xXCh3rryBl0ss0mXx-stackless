@@ -99,10 +99,10 @@ export async function skipAction(formData: FormData) {
 
 export type RecordActionState = { ok: true } | { ok: false; error: string };
 
-function recordFail(err: unknown): RecordActionState {
+function recordFail(err: unknown, fallback = "Couldn’t save that."): RecordActionState {
   return {
     ok: false,
-    error: err instanceof Error ? err.message : "Couldn’t save that.",
+    error: err instanceof Error ? err.message : fallback,
   };
 }
 
@@ -163,5 +163,37 @@ export async function updateInvoiceAction(
     return { ok: true };
   } catch (err) {
     return recordFail(err);
+  }
+}
+
+export async function deleteLeadAction(
+  _prev: RecordActionState | null,
+  formData: FormData,
+): Promise<RecordActionState> {
+  await requireSignedIn();
+  try {
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) throw new Error("Missing lead id.");
+    await getDataStore().deleteLead(id);
+    revalidatePath("/app");
+    return { ok: true };
+  } catch (err) {
+    return recordFail(err, "Couldn’t delete that.");
+  }
+}
+
+export async function deleteInvoiceAction(
+  _prev: RecordActionState | null,
+  formData: FormData,
+): Promise<RecordActionState> {
+  await requireSignedIn();
+  try {
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) throw new Error("Missing invoice id.");
+    await getDataStore().deleteInvoice(id);
+    revalidatePath("/app");
+    return { ok: true };
+  } catch (err) {
+    return recordFail(err, "Couldn’t delete that.");
   }
 }

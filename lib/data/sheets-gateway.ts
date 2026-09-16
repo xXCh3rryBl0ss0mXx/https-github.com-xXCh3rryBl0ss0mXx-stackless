@@ -17,6 +17,7 @@ function wrapSheetsError(tab: string, err: unknown): never {
 export class GoogleSheetsGateway implements SheetsGateway {
   private sheets: ReturnType<typeof google.sheets>;
   private readonly config: SheetsConfig;
+  private readonly sheetIds = new Map<string, number>();
 
   constructor(config: SheetsConfig) {
     const auth = new google.auth.GoogleAuth({
@@ -79,5 +80,59 @@ export class GoogleSheetsGateway implements SheetsGateway {
     } catch (err) {
       wrapSheetsError(tab, err);
     }
+  }
+
+  async deleteRow(tab: string, dataRowIndex: number): Promise<void> {
+    if (dataRowIndex < 0) {
+      throw new Error(`Invalid row index ${dataRowIndex} on "${tab}".`);
+    }
+    const sheetId = await this.sheetIdForTab(tab);
+    const startIndex = dataRowIndex + 1; // +1 for the header row
+    try {
+      await this.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: this.config.spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              deleteDimension: {
+                range: {
+                  sheetId,
+                  dimension: "ROWS",
+                  startIndex,
+                  endIndex: startIndex + 1,
+                },
+              },
+            },
+          ],
+        },
+      });
+    } catch (err) {
+      wrapSheetsError(tab, err);
+    }
+  }
+
+  private async sheetIdForTab(tab: string): Promise<number> {
+    const cached = this.sheetIds.get(tab);
+    if (cached != null) return cached;
+    try {
+      const res = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.config.spreadsheetId,
+        fields: "sheets.properties",
+      });
+      for (const sheet of res.data.sheets ?? []) {
+        const title = sheet.properties?.title;
+        const sheetId = sheet.properties?.sheetId;
+        if (title != null && sheetId != null) {
+          this.sheetIds.set(title, sheetId);
+        }
+      }
+    } catch (err) {
+      wrapSheetsError(tab, err);
+    }
+    const sheetId = this.sheetIds.get(tab);
+    if (sheetId == null) {
+      throw new Error(`No sheet tab named "${tab}".`);
+    }
+    return sheetId;
   }
 }
