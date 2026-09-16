@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/data/memory-store.test.ts lib/data/sheets-map.test.ts lib/data/sheets-store.test.ts lib/clerk-paths.test.ts lib/email/send.test.ts"
+    "test": "tsx --test lib/data/memory-store.test.ts lib/data/sheets-map.test.ts lib/data/sheets-store.test.ts lib/data/due-nudges.test.ts lib/clerk-paths.test.ts lib/email/send.test.ts lib/schedule.test.ts lib/cron/send-due-nudges.test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.3",

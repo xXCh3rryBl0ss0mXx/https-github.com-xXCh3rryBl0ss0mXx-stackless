@@ -47,6 +47,16 @@ export type Nudge = {
   scheduledFor?: string;
   sentAt?: string;
   createdAt: string;
+  /** Last cron/send error. Stays a draft so the user can still send or edit. */
+  lastError?: string;
+  /** Failed auto-send tries. Cron stops after MAX_NUDGE_SEND_ATTEMPTS. */
+  sendAttempts?: number;
+};
+
+export type NudgeDraftWrite = {
+  draftText: string;
+  /** Pass `""` to clear. Omit to leave the current schedule alone. */
+  scheduledFor?: string;
 };
 
 export type StoreSnapshot = {
@@ -98,7 +108,9 @@ export type DataStore = {
     draftText: string;
     scheduledFor?: string;
   }): Promise<Nudge>;
-  updateNudgeDraft(id: string, draftText: string): Promise<Nudge>;
+  updateNudgeDraft(id: string, input: NudgeDraftWrite): Promise<Nudge>;
+  /** Stay draft; bump sendAttempts and lastError so cron can skip after N failures. */
+  recordNudgeSendFailure(id: string, error: string): Promise<void>;
   markNudgeSent(id: string, sentAt: string): Promise<void>;
   markNudgeSkipped(id: string): Promise<void>;
 };

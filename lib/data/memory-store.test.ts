@@ -65,8 +65,30 @@ describe("MemoryDataStore", () => {
     });
     assert.equal(draft.status, "draft");
 
-    const edited = await store.updateNudgeDraft(draft.id, "Hey Jordan — logo package still on?");
+    const edited = await store.updateNudgeDraft(draft.id, {
+      draftText: "Hey Jordan — logo package still on?",
+      scheduledFor: "2026-09-18T15:00:00.000Z",
+    });
     assert.equal(edited.draftText, "Hey Jordan — logo package still on?");
+    assert.equal(edited.scheduledFor, "2026-09-18T15:00:00.000Z");
+
+    const kept = await store.updateNudgeDraft(draft.id, {
+      draftText: "Hey Jordan — still logo?",
+    });
+    assert.equal(kept.scheduledFor, "2026-09-18T15:00:00.000Z");
+
+    await store.recordNudgeSendFailure(draft.id, "Email didn’t send: timeout");
+    const failed = (await store.listNudges()).find((row) => row.id === draft.id);
+    assert.equal(failed?.status, "draft");
+    assert.equal(failed?.sendAttempts, 1);
+    assert.match(failed?.lastError ?? "", /timeout/);
+
+    const retried = await store.updateNudgeDraft(draft.id, {
+      draftText: "Hey Jordan — still logo?",
+      scheduledFor: "2026-09-18T15:00:00.000Z",
+    });
+    assert.equal(retried.sendAttempts, undefined);
+    assert.equal(retried.lastError, undefined);
 
     await store.markNudgeSent(draft.id, "2026-09-15");
     const afterSent = (await store.listNudges()).find((row) => row.id === draft.id);

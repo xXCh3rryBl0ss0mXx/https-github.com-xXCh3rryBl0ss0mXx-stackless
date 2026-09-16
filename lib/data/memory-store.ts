@@ -1,7 +1,8 @@
+import { clipError } from "../schedule";
+import { todayStamp } from "../today";
 import { invoiceIsOpen, invoiceIsOverdue, leadNeedsFollowUp, newestFirst } from "./filters";
 import { nextPrefixedId } from "./ids";
 import { applyInvoiceWrite, applyLeadWrite } from "./record-input";
-import { todayStamp } from "../today";
 import type {
   DataStore,
   Invoice,
@@ -9,6 +10,7 @@ import type {
   Lead,
   LeadWrite,
   Nudge,
+  NudgeDraftWrite,
   NudgeKind,
   StoreSnapshot,
 } from "./types";
@@ -158,20 +160,30 @@ export class MemoryDataStore implements DataStore {
     return clone(nudge);
   }
 
-  async updateNudgeDraft(id: string, draftText: string): Promise<Nudge> {
+  async updateNudgeDraft(id: string, input: NudgeDraftWrite): Promise<Nudge> {
     const nudge = this.requireNudge(id);
     if (nudge.status !== "draft") {
       throw new Error(`Nudge ${id} is ${nudge.status}, not a draft`);
     }
-    nudge.draftText = draftText;
+    applyDraftWrite(nudge, input);
     this.flush();
     return clone(nudge);
+  }
+
+  async recordNudgeSendFailure(id: string, error: string): Promise<void> {
+    const nudge = this.requireNudge(id);
+    if (nudge.status !== "draft") return;
+    nudge.lastError = clipError(error);
+    nudge.sendAttempts = (nudge.sendAttempts ?? 0) + 1;
+    this.flush();
   }
 
   async markNudgeSent(id: string, sentAt: string): Promise<void> {
     const nudge = this.requireNudge(id);
     nudge.status = "sent";
     nudge.sentAt = sentAt;
+    nudge.lastError = undefined;
+    nudge.sendAttempts = undefined;
     if (nudge.kind === "invoice") {
       const invoice = this.invoices.find((row) => row.id === nudge.relatedId);
       if (invoice) invoice.lastNudgedAt = sentAt;
@@ -222,4 +234,14 @@ export class MemoryDataStore implements DataStore {
       nudges: clone(this.nudges),
     });
   }
+}
+
+function applyDraftWrite(nudge: Nudge, input: NudgeDraftWrite) {
+  nudge.draftText = input.draftText;
+  if (input.scheduledFor !== undefined) {
+    const trimmed = input.scheduledFor.trim();
+    nudge.scheduledFor = trimmed ? trimmed : undefined;
+  }
+  nudge.lastError = undefined;
+  nudge.sendAttempts = undefined;
 }

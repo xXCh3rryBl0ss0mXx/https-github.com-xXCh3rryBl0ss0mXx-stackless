@@ -47,6 +47,8 @@ export const NUDGE_COLUMNS = [
   "scheduled_for",
   "sent_at",
   "created_at",
+  "last_error",
+  "send_attempts",
 ] as const;
 
 export const LEAD_REQUIRED_COLUMNS = ["id", "name", "email", "status", "created_at"] as const;
@@ -89,6 +91,14 @@ const NUDGE_STATUSES = new Set<NudgeStatus>(["draft", "sent", "skipped"]);
 function blankToUndef(value: string | undefined): string | undefined {
   const trimmed = value?.trim() ?? "";
   return trimmed ? trimmed : undefined;
+}
+
+function parseSendAttempts(value: string | undefined): number | undefined {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return undefined;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) return undefined;
+  return Math.floor(parsed);
 }
 
 function requireCell(row: Record<string, string>, column: string, label: string): string {
@@ -208,6 +218,8 @@ export function nudgeFromRow(row: Record<string, string>): Nudge {
     scheduledFor: blankToUndef(row.scheduled_for),
     sentAt: blankToUndef(row.sent_at),
     createdAt: requireCell(row, "created_at", "Nudge row"),
+    lastError: blankToUndef(row.last_error),
+    sendAttempts: parseSendAttempts(row.send_attempts),
   });
 }
 
@@ -251,6 +263,8 @@ export function nudgeToFields(nudge: Nudge): Record<string, string> {
     scheduled_for: nudge.scheduledFor ?? "",
     sent_at: nudge.sentAt ?? "",
     created_at: nudge.createdAt,
+    last_error: nudge.lastError ?? "",
+    send_attempts: nudge.sendAttempts != null ? String(nudge.sendAttempts) : "",
   };
 }
 
