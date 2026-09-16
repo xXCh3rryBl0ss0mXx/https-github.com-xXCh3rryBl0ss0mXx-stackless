@@ -26,6 +26,7 @@ import {
   type SheetTable,
   zipRow,
 } from "./sheets-map";
+import { clipError } from "../schedule";
 import { todayStamp } from "../today";
 import type {
   DataStore,
@@ -34,6 +35,7 @@ import type {
   Lead,
   LeadWrite,
   Nudge,
+  NudgeDraftWrite,
   NudgeKind,
 } from "./types";
 
@@ -193,14 +195,14 @@ export class SheetsDataStore implements DataStore {
     return nudge;
   }
 
-  async updateNudgeDraft(id: string, draftText: string): Promise<Nudge> {
+  async updateNudgeDraft(id: string, input: NudgeDraftWrite): Promise<Nudge> {
     const table = await this.gateway.read(NUDGE_TAB);
     const { index, row } = this.requireRow(NUDGE_TAB, table, id);
     const nudge = nudgeFromRow(row);
     if (nudge.status !== "draft") {
       throw new Error(`Nudge ${id} is ${nudge.status}, not a draft`);
     }
-    nudge.draftText = draftText;
+    applyDraftWrite(nudge, input);
     await this.gateway.updateRow(
       NUDGE_TAB,
       index,
@@ -209,12 +211,28 @@ export class SheetsDataStore implements DataStore {
     return nudge;
   }
 
+  async recordNudgeSendFailure(id: string, error: string): Promise<void> {
+    const table = await this.gateway.read(NUDGE_TAB);
+    const { index, row } = this.requireRow(NUDGE_TAB, table, id);
+    const nudge = nudgeFromRow(row);
+    if (nudge.status !== "draft") return;
+    nudge.lastError = clipError(error);
+    nudge.sendAttempts = (nudge.sendAttempts ?? 0) + 1;
+    await this.gateway.updateRow(
+      NUDGE_TAB,
+      index,
+      fieldsToCells(table.headers, nudgeToFields(nudge), table.rows[index]),
+    );
+  }
+
   async markNudgeSent(id: string, sentAt: string): Promise<void> {
     const table = await this.gateway.read(NUDGE_TAB);
     const { index, row } = this.requireRow(NUDGE_TAB, table, id);
     const nudge = nudgeFromRow(row);
     nudge.status = "sent";
     nudge.sentAt = sentAt;
+    nudge.lastError = undefined;
+    nudge.sendAttempts = undefined;
     await this.gateway.updateRow(
       NUDGE_TAB,
       index,
@@ -316,4 +334,14 @@ export class SheetsDataStore implements DataStore {
       await this.gateway.deleteRow(NUDGE_TAB, index);
     }
   }
+}
+
+function applyDraftWrite(nudge: Nudge, input: NudgeDraftWrite) {
+  nudge.draftText = input.draftText;
+  if (input.scheduledFor !== undefined) {
+    const trimmed = input.scheduledFor.trim();
+    nudge.scheduledFor = trimmed ? trimmed : undefined;
+  }
+  nudge.lastError = undefined;
+  nudge.sendAttempts = undefined;
 }

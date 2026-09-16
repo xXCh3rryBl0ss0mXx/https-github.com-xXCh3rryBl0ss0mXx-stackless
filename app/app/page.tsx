@@ -68,8 +68,8 @@ export default async function AppPage() {
           Who needs a nudge
         </h1>
         <p className="max-w-[40rem] text-muted">
-          Add people and invoices, then write the note and tap Send email. We only mark it
-          sent if the email really goes out.
+          Add people and invoices, then write the note. Send it now, or pick a time and save the
+          draft — we’ll still send it when it’s due if you’re offline.
         </p>
       </div>
       <AddRecords today={today} />

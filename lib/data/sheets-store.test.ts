@@ -147,7 +147,16 @@ describe("SheetsDataStore", () => {
       draftText: "Hey Jordan",
       scheduledFor: "2026-09-15",
     });
-    await store.updateNudgeDraft(draft.id, "Hey Jordan — still on?");
+    await store.updateNudgeDraft(draft.id, {
+      draftText: "Hey Jordan — still on?",
+      scheduledFor: "2026-09-18T15:00:00.000Z",
+    });
+    const scheduled = (await store.listNudges()).find((row) => row.id === draft.id);
+    assert.equal(scheduled?.scheduledFor, "2026-09-18T15:00:00.000Z");
+    await store.recordNudgeSendFailure(draft.id, "Email didn’t send: timeout");
+    const failed = (await store.listNudges()).find((row) => row.id === draft.id);
+    assert.equal(failed?.status, "draft");
+    assert.equal(failed?.sendAttempts, 1);
     await store.markNudgeSent(draft.id, "2026-09-15");
     assert.equal((await store.getLead("lead_002"))?.lastContactAt, "2026-09-15");
     const sent = (await store.listNudges()).find((row) => row.id === draft.id);

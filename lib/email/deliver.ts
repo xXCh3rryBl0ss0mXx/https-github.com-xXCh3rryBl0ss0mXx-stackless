@@ -42,6 +42,10 @@ export async function deliverNudgeDraft(
   sentAt: string,
   deps: SendNudgeDeps = {},
 ): Promise<SendNudgeResult> {
+  if (nudge.status === "sent") {
+    return { ok: true, id: "already-sent" };
+  }
+
   const recipient = await recipientForNudge(store, nudge);
   if (!recipient.ok) return recipient;
 

@@ -72,10 +72,12 @@ Leave `STACKLESS_DATA_STORE=memory` if you have not done this yet.
 | channel | `email` (SMS later) |
 | draft_text | the message |
 | status | `draft` / `sent` / `skipped` |
-| scheduled_for | when it should go |
+| scheduled_for | when auto-send should go (YYYY-MM-DD or ISO datetime). Blank = no auto-send |
 | sent_at | when it actually went |
 | created_at | when the row was made |
+| last_error | last auto-send error (optional; cron writes this on failure) |
+| send_attempts | failed auto-send count (optional; cron stops after 5) |
 
 ## Thin adapter
 
-App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. `MemoryDataStore` and `SheetsDataStore` both implement the same create/update/delete methods for leads and invoices. Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. When you leave Sheets for a real database, swap the guts of those functions, not the whole app.
+App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. `MemoryDataStore` and `SheetsDataStore` both implement the same create/update/delete methods for leads and invoices, and both persist `scheduledFor` on nudge create **and** update. Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. When you leave Sheets for a real database, swap the guts of those functions, not the whole app.

@@ -4,6 +4,7 @@ import { InvoiceEditor, LeadEditor } from "@/components/record-forms";
 import { followUpDraftText, formatUsd, invoiceDraftText } from "@/lib/data/draft-text";
 import { leadStatusLabel } from "@/lib/data/labels";
 import type { Invoice, Lead, Nudge } from "@/lib/data/types";
+import { formatScheduledFor } from "@/lib/schedule";
 
 function latestDraft(nudges: Nudge[], relatedId: string): Nudge | undefined {
   return nudges.find((nudge) => nudge.relatedId === relatedId && nudge.status === "draft");
@@ -58,7 +59,7 @@ export function NudgeBoard({
           People to follow up with
         </h2>
         <p className="mb-4 text-muted">
-          Quiet leads. Edit the draft, then tap Send email.
+          Quiet leads. Edit the draft, pick a send time if you want, then tap Send email.
         </p>
         {followUps.length === 0 ? (
           <p className="rounded-[20px] border border-line bg-follow-bg p-[1.15rem] text-muted">
@@ -99,6 +100,9 @@ export function NudgeBoard({
                     nudgeId={draft?.id}
                     initialText={draft?.draftText ?? followUpDraftText(lead)}
                     toEmail={lead.email}
+                    initialScheduledFor={draft?.scheduledFor}
+                    lastError={draft?.lastError}
+                    sendAttempts={draft?.sendAttempts}
                   />
                 </article>
               );
@@ -110,7 +114,8 @@ export function NudgeBoard({
       <section>
         <h2 className="mb-1 text-[1.5rem] font-bold tracking-[-0.02em]">Overdue invoices</h2>
         <p className="mb-4 text-muted">
-          Open bills past their due date. Edit the reminder, then tap Send email.
+          Open bills past their due date. Edit the reminder, pick a send time if you want, then tap
+          Send email.
         </p>
         {overdue.length === 0 ? (
           <p className="rounded-[20px] border border-line bg-badge-bg p-[1.15rem] text-muted">
@@ -150,6 +155,9 @@ export function NudgeBoard({
                     nudgeId={draft?.id}
                     initialText={draft?.draftText ?? invoiceDraftText(invoice)}
                     toEmail={invoice.clientEmail}
+                    initialScheduledFor={draft?.scheduledFor}
+                    lastError={draft?.lastError}
+                    sendAttempts={draft?.sendAttempts}
                   />
                 </article>
               );
@@ -189,6 +197,11 @@ export function NudgeBoard({
                       {nudge.status}
                     </span>
                     <span className="text-[0.85rem] text-muted">{nudge.createdAt}</span>
+                    {nudge.status === "draft" && nudge.scheduledFor ? (
+                      <span className="text-[0.85rem] text-follow-fg">
+                        Scheduled {formatScheduledFor(nudge.scheduledFor)}
+                      </span>
+                    ) : null}
                   </div>
                   {nudge.status === "draft" ? (
                     <NudgeActions
@@ -197,6 +210,9 @@ export function NudgeBoard({
                       nudgeId={nudge.id}
                       initialText={nudge.draftText}
                       toEmail={emailFor(nudge.kind, nudge.relatedId, directoryLeads, directoryInvoices)}
+                      initialScheduledFor={nudge.scheduledFor}
+                      lastError={nudge.lastError}
+                      sendAttempts={nudge.sendAttempts}
                     />
                   ) : (
                     <p className="whitespace-pre-wrap text-[0.95rem] text-bubble">

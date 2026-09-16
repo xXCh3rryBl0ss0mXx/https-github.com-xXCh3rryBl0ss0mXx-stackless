@@ -7,6 +7,7 @@ import { getDataStore } from "@/lib/data/store";
 import type { Nudge, NudgeKind } from "@/lib/data/types";
 import { deliverNudgeDraft } from "@/lib/email/deliver";
 import { requireSignedIn } from "@/lib/require-signed-in";
+import { scheduledForFromInput } from "@/lib/schedule";
 import { todayStamp } from "@/lib/today";
 
 function readKind(formData: FormData): NudgeKind {
@@ -33,11 +34,16 @@ async function defaultDraftText(kind: NudgeKind, relatedId: string): Promise<str
   return invoiceDraftText(invoice);
 }
 
+function readScheduledFor(formData: FormData): string | undefined {
+  return scheduledForFromInput(String(formData.get("scheduledFor") ?? ""));
+}
+
 async function upsertDraft(formData: FormData): Promise<Nudge> {
   const kind = readKind(formData);
   const relatedId = String(formData.get("relatedId") ?? "");
   const nudgeId = String(formData.get("nudgeId") ?? "");
   const typed = String(formData.get("draftText") ?? "").trim();
+  const scheduledFor = readScheduledFor(formData);
   const store = getDataStore();
   const text = typed || (await defaultDraftText(kind, relatedId));
   const nudges = await store.listNudges();
@@ -46,13 +52,16 @@ async function upsertDraft(formData: FormData): Promise<Nudge> {
     latestDraft(nudges, relatedId);
 
   if (existing) {
-    return store.updateNudgeDraft(existing.id, text);
+    return store.updateNudgeDraft(existing.id, {
+      draftText: text,
+      scheduledFor: scheduledFor ?? "",
+    });
   }
   return store.createNudgeDraft({
     kind,
     relatedId,
     draftText: text,
-    scheduledFor: todayStamp(),
+    scheduledFor,
   });
 }
 

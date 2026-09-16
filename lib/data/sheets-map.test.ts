@@ -69,6 +69,23 @@ describe("sheets column mapping", () => {
     assert.equal(nudgeFields.draft_text, nudge.draftText);
     const nudgeRow = zipRow([...NUDGE_COLUMNS], fieldsToCells([...NUDGE_COLUMNS], nudgeFields));
     assert.deepEqual(nudgeFromRow(nudgeRow), nudge);
+
+    const failed = nudgeFromRow({
+      id: "nudge_009",
+      kind: "follow_up",
+      related_id: "lead_001",
+      channel: "email",
+      draft_text: "Ping",
+      status: "draft",
+      scheduled_for: "2026-09-18T15:00:00.000Z",
+      created_at: "2026-09-16",
+      last_error: "Email didn’t send: rate limited",
+      send_attempts: "2",
+    });
+    assert.equal(failed.scheduledFor, "2026-09-18T15:00:00.000Z");
+    assert.equal(failed.lastError, "Email didn’t send: rate limited");
+    assert.equal(failed.sendAttempts, 2);
+    assert.equal(nudgeToFields(failed).send_attempts, "2");
   });
 
   it("keeps extra sheet columns when writing a patch", () => {

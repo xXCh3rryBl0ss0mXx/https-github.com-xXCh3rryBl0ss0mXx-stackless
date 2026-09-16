@@ -174,4 +174,22 @@ describe("deliverNudgeDraft", () => {
     const after = (await store.listNudges()).find((row) => row.id === draft.id);
     assert.equal(after?.status, "draft");
   });
+
+  it("does not call Resend again when the nudge is already sent", async () => {
+    const store = storeWithDraft();
+    const draft = await store.createNudgeDraft({
+      kind: "follow_up",
+      relatedId: "lead_001",
+      draftText: "Hey Sam.",
+    });
+    await store.markNudgeSent(draft.id, "2026-09-15");
+    const sent = (await store.listNudges()).find((row) => row.id === draft.id);
+    const calls: unknown[] = [];
+    const result = await deliverNudgeDraft(store, sent!, "2026-09-16", {
+      env,
+      client: mockClient({ data: { id: "should-not-run" }, error: null }, calls),
+    });
+    assert.deepEqual(result, { ok: true, id: "already-sent" });
+    assert.equal(calls.length, 0);
+  });
 });
