@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { followUpDraftText, invoiceDraftText } from "@/lib/data/draft-text";
+import { invoiceWriteFromForm, leadWriteFromForm } from "@/lib/data/record-input";
 import { getDataStore } from "@/lib/data/store";
 import type { Nudge, NudgeKind } from "@/lib/data/types";
 import { deliverNudgeDraft } from "@/lib/email/deliver";
@@ -94,4 +95,73 @@ export async function skipAction(formData: FormData) {
   const draft = await upsertDraft(formData);
   await getDataStore().markNudgeSkipped(draft.id);
   revalidatePath("/app");
+}
+
+export type RecordActionState = { ok: true } | { ok: false; error: string };
+
+function recordFail(err: unknown): RecordActionState {
+  return {
+    ok: false,
+    error: err instanceof Error ? err.message : "Couldn’t save that.",
+  };
+}
+
+export async function createLeadAction(
+  _prev: RecordActionState | null,
+  formData: FormData,
+): Promise<RecordActionState> {
+  await requireSignedIn();
+  try {
+    await getDataStore().createLead(leadWriteFromForm(formData));
+    revalidatePath("/app");
+    return { ok: true };
+  } catch (err) {
+    return recordFail(err);
+  }
+}
+
+export async function updateLeadAction(
+  _prev: RecordActionState | null,
+  formData: FormData,
+): Promise<RecordActionState> {
+  await requireSignedIn();
+  try {
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) throw new Error("Missing lead id.");
+    await getDataStore().updateLead(id, leadWriteFromForm(formData));
+    revalidatePath("/app");
+    return { ok: true };
+  } catch (err) {
+    return recordFail(err);
+  }
+}
+
+export async function createInvoiceAction(
+  _prev: RecordActionState | null,
+  formData: FormData,
+): Promise<RecordActionState> {
+  await requireSignedIn();
+  try {
+    await getDataStore().createInvoice(invoiceWriteFromForm(formData));
+    revalidatePath("/app");
+    return { ok: true };
+  } catch (err) {
+    return recordFail(err);
+  }
+}
+
+export async function updateInvoiceAction(
+  _prev: RecordActionState | null,
+  formData: FormData,
+): Promise<RecordActionState> {
+  await requireSignedIn();
+  try {
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) throw new Error("Missing invoice id.");
+    await getDataStore().updateInvoice(id, invoiceWriteFromForm(formData));
+    revalidatePath("/app");
+    return { ok: true };
+  } catch (err) {
+    return recordFail(err);
+  }
 }

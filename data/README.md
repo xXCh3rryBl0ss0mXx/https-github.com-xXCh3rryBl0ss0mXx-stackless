@@ -2,7 +2,7 @@
 
 Three tabs. Copy these CSVs into one Google Sheet (one tab per file).
 
-The app does **not** need a Sheet to run. It starts with an in-memory copy of this seed data. A Sheets adapter can swap in later behind the same `DataStore` functions.
+The app does **not** need a Sheet to run. Default `STACKLESS_DATA_STORE=memory` uses an in-memory copy of this seed data. Set `STACKLESS_DATA_STORE=sheets` only after the service account can edit the Sheet.
 
 ## How to make the Sheet
 
@@ -14,7 +14,25 @@ The app does **not** need a Sheet to run. It starts with an in-memory copy of th
     - `nudge_log.csv` → tab name **nudge_log**
 4. Delete any empty default Sheet1 tab
 
-Keep the **header row** (first row). Don’t rename columns — the app adapter looks for these exact names.
+Keep the **header row** (first row). Don’t rename columns — the app adapter looks for these exact names. Optional columns (`company`, `notes`, `payment_link`, and the other blanks in the CSVs) can be missing; required columns cannot.
+
+## Connect a service account
+
+Credentials stay on the server (`GOOGLE_*` in `.env.local` / Vercel). Never use `NEXT_PUBLIC_` for these.
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → create or pick a project
+2. **APIs & Services** → **Library** → enable **Google Sheets API**
+3. **IAM & Admin** → **Service Accounts** → **Create service account** (name it e.g. `stackless-sheets`)
+4. Open the account → **Keys** → **Add key** → **Create new key** → JSON. Save the file somewhere private — not in this repo.
+5. From that JSON, copy:
+    - `client_email` → `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+    - `private_key` → `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (keep the `-----BEGIN PRIVATE KEY-----` block; if you paste it as one line, keep the `\n` characters)
+6. Spreadsheet id from the URL `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit` → `GOOGLE_SHEETS_SPREADSHEET_ID`
+7. In Google Sheets: **Share** → paste the service account email → role **Editor** → uncheck notify → **Share**
+8. Set `STACKLESS_DATA_STORE=sheets` in `.env.local` (and Vercel if you want Production/Preview on Sheets)
+9. Restart the app. If sheets mode is on but a value is missing, `/app` shows a peach error instead of a stack trace.
+
+Leave `STACKLESS_DATA_STORE=memory` if you have not done this yet.
 
 ## Tabs (simple)
 
@@ -60,4 +78,4 @@ Keep the **header row** (first row). Don’t rename columns — the app adapter 
 
 ## Thin adapter
 
-App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. When you leave Sheets for a real database, swap the guts of those functions, not the whole app.
+App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. `MemoryDataStore` and `SheetsDataStore` both implement the same create/update methods for leads and invoices. When you leave Sheets for a real database, swap the guts of those functions, not the whole app.

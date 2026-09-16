@@ -1,5 +1,8 @@
+import type { ReactNode } from "react";
 import { NudgeActions } from "@/components/nudge-actions";
+import { InvoiceEditor, LeadEditor } from "@/components/record-forms";
 import { followUpDraftText, formatUsd, invoiceDraftText } from "@/lib/data/draft-text";
+import { leadStatusLabel } from "@/lib/data/labels";
 import type { Invoice, Lead, Nudge } from "@/lib/data/types";
 
 function latestDraft(nudges: Nudge[], relatedId: string): Nudge | undefined {
@@ -26,26 +29,27 @@ function emailFor(
   return invoices.find((invoice) => invoice.id === relatedId)?.clientEmail;
 }
 
-function leadStatusLabel(status: Lead["status"]): string {
-  if (status === "waiting_on_them") return "Waiting on them";
-  if (status === "waiting_on_you") return "Waiting on you";
-  if (status === "new") return "New";
-  return status;
-}
-
 export function NudgeBoard({
   leads,
   invoices,
+  allLeads,
+  allInvoices,
   nudges,
   today,
+  records,
 }: {
   leads: Lead[];
   invoices: Invoice[];
+  allLeads?: Lead[];
+  allInvoices?: Invoice[];
   nudges: Nudge[];
   today: string;
+  records?: ReactNode;
 }) {
   const followUps = leads.filter((lead) => stillInQueue(nudges, lead.id, today));
   const overdue = invoices.filter((invoice) => stillInQueue(nudges, invoice.id, today));
+  const directoryLeads = allLeads ?? leads;
+  const directoryInvoices = allInvoices ?? invoices;
 
   return (
     <div className="flex flex-col gap-8">
@@ -87,6 +91,7 @@ export function NudgeBoard({
                       {leadStatusLabel(lead.status)}
                     </span>
                   </div>
+                  <LeadEditor lead={lead} today={today} />
                   <NudgeActions
                     key={draft?.id ?? `new-${lead.id}`}
                     kind="follow_up"
@@ -137,6 +142,7 @@ export function NudgeBoard({
                       Overdue
                     </span>
                   </div>
+                  <InvoiceEditor invoice={invoice} today={today} />
                   <NudgeActions
                     key={draft?.id ?? `new-${invoice.id}`}
                     kind="invoice"
@@ -151,6 +157,8 @@ export function NudgeBoard({
           </div>
         )}
       </section>
+
+      {records}
 
       <section>
         <h2 className="mb-1 text-[1.5rem] font-bold tracking-[-0.02em]">Recent nudges</h2>
@@ -188,7 +196,7 @@ export function NudgeBoard({
                       relatedId={nudge.relatedId}
                       nudgeId={nudge.id}
                       initialText={nudge.draftText}
-                      toEmail={emailFor(nudge.kind, nudge.relatedId, leads, invoices)}
+                      toEmail={emailFor(nudge.kind, nudge.relatedId, directoryLeads, directoryInvoices)}
                     />
                   ) : (
                     <p className="whitespace-pre-wrap text-[0.95rem] text-bubble">

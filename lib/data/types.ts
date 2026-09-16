@@ -55,13 +55,39 @@ export type StoreSnapshot = {
   nudges: Nudge[];
 };
 
+export type LeadWrite = {
+  name: string;
+  email: string;
+  company?: string;
+  status: LeadStatus;
+  lastContactAt?: string;
+  nextFollowUpAt?: string;
+  notes?: string;
+};
+
+export type InvoiceWrite = {
+  clientName: string;
+  clientEmail: string;
+  invoiceNumber: string;
+  amountUsd: number;
+  status: InvoiceStatus;
+  dueDate: string;
+  paymentLink?: string;
+};
+
 export type DataStore = {
+  listLeads(): Promise<Lead[]>;
   listLeadsNeedingFollowUp(today: string): Promise<Lead[]>;
+  listInvoices(): Promise<Invoice[]>;
   listOpenInvoices(): Promise<Invoice[]>;
   listOverdueInvoices(today: string): Promise<Invoice[]>;
   listNudges(): Promise<Nudge[]>;
   getLead(id: string): Promise<Lead | null>;
   getInvoice(id: string): Promise<Invoice | null>;
+  createLead(input: LeadWrite): Promise<Lead>;
+  updateLead(id: string, input: LeadWrite): Promise<Lead>;
+  createInvoice(input: InvoiceWrite): Promise<Invoice>;
+  updateInvoice(id: string, input: InvoiceWrite): Promise<Invoice>;
   createNudgeDraft(input: {
     kind: NudgeKind;
     relatedId: string;
