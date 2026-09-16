@@ -40,7 +40,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Two queues: people whose follow-up date is due, and open invoices past their due date. Each row has an editable draft. **Save draft**, **Send email**, and **Skip** all go through `DataStore` (`lib/data/types.ts`).
 
-**Add a person** / **Add an invoice** sit above the queues. After you save, anyone with a follow-up date of today (or earlier) and any **open** invoice due today (or earlier) shows up so you can draft and send a nudge. **Your people** and **Your invoices** list everything for edit (status, dates, notes).
+**Add a person** / **Add an invoice** sit above the queues. After you save, anyone with a follow-up date of today (or earlier) and any **open** invoice due today (or earlier) shows up so you can draft and send a nudge. **Your people** and **Your invoices** list everything for edit (status, dates, notes). **Delete** sits next to **Save changes** and asks you to confirm first (same peach confirm as Send email). Deleting a person or invoice also drops related draft nudges so they don’t linger on the list.
 
 **Send email** asks you to confirm, then sends through [Resend](https://resend.com) to the lead/client address. Subjects are **Quick check-in** (follow-ups) and **Invoice reminder** (invoices); the body is the draft you edited. The nudge is marked `sent` (with `sentAt`) **only if Resend accepts the mail**. If it fails — missing keys, bad from-address, Resend error — the draft stays a draft and the peach error on the card tells you why. Nothing is sent on a schedule yet (no Vercel Cron in this version).
 

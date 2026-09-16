@@ -86,8 +86,10 @@ export type DataStore = {
   getInvoice(id: string): Promise<Invoice | null>;
   createLead(input: LeadWrite): Promise<Lead>;
   updateLead(id: string, input: LeadWrite): Promise<Lead>;
+  deleteLead(id: string): Promise<void>;
   createInvoice(input: InvoiceWrite): Promise<Invoice>;
   updateInvoice(id: string, input: InvoiceWrite): Promise<Invoice>;
+  deleteInvoice(id: string): Promise<void>;
   createNudgeDraft(input: {
     kind: NudgeKind;
     relatedId: string;

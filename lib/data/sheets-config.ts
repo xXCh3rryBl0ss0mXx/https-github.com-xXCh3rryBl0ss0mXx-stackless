@@ -4,6 +4,7 @@ export type SheetsGateway = {
   read(tab: string): Promise<SheetTable>;
   appendRow(tab: string, values: string[]): Promise<void>;
   updateRow(tab: string, dataRowIndex: number, values: string[]): Promise<void>;
+  deleteRow(tab: string, dataRowIndex: number): Promise<void>;
 };
 
 export type SheetsConfig = {

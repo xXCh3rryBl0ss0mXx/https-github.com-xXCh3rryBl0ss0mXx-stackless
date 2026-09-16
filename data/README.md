@@ -78,4 +78,4 @@ Leave `STACKLESS_DATA_STORE=memory` if you have not done this yet.
 
 ## Thin adapter
 
-App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. `MemoryDataStore` and `SheetsDataStore` both implement the same create/update methods for leads and invoices. When you leave Sheets for a real database, swap the guts of those functions, not the whole app.
+App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. `MemoryDataStore` and `SheetsDataStore` both implement the same create/update/delete methods for leads and invoices (delete also removes related draft nudges). When you leave Sheets for a real database, swap the guts of those functions, not the whole app.

@@ -94,6 +94,13 @@ export class MemoryDataStore implements DataStore {
     return clone(lead);
   }
 
+  async deleteLead(id: string): Promise<void> {
+    this.requireLead(id);
+    this.leads = this.leads.filter((row) => row.id !== id);
+    this.dropDraftsFor(id);
+    this.flush();
+  }
+
   async createInvoice(input: InvoiceWrite): Promise<Invoice> {
     const invoice: Invoice = {
       id: nextPrefixedId(
@@ -119,6 +126,13 @@ export class MemoryDataStore implements DataStore {
     applyInvoiceWrite(invoice, input);
     this.flush();
     return clone(invoice);
+  }
+
+  async deleteInvoice(id: string): Promise<void> {
+    this.requireInvoice(id);
+    this.invoices = this.invoices.filter((row) => row.id !== id);
+    this.dropDraftsFor(id);
+    this.flush();
   }
 
   async createNudgeDraft(input: {
@@ -174,6 +188,12 @@ export class MemoryDataStore implements DataStore {
     const nudge = this.requireNudge(id);
     nudge.status = "skipped";
     this.flush();
+  }
+
+  private dropDraftsFor(relatedId: string) {
+    this.nudges = this.nudges.filter(
+      (nudge) => !(nudge.relatedId === relatedId && nudge.status === "draft"),
+    );
   }
 
   private requireLead(id: string): Lead {

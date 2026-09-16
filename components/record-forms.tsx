@@ -4,6 +4,8 @@ import { useActionState, useState } from "react";
 import {
   createInvoiceAction,
   createLeadAction,
+  deleteInvoiceAction,
+  deleteLeadAction,
   updateInvoiceAction,
   updateLeadAction,
   type RecordActionState,
@@ -21,6 +23,9 @@ const quietBtn =
 
 const mintBtn =
   "cursor-pointer rounded-full border-0 bg-mint px-4 py-2 font-[inherit] text-[0.9rem] font-extrabold text-[#145c3d] disabled:cursor-not-allowed disabled:opacity-60";
+
+const dangerBtn =
+  "cursor-pointer rounded-full border border-peach bg-badge-bg px-4 py-2 font-[inherit] text-[0.9rem] font-extrabold text-badge-fg shadow-[0_6px_16px_rgba(196,92,26,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
 
 const fieldClass =
   "w-full rounded-[16px] border border-line bg-white px-3 py-2 font-[inherit] text-[0.95rem] text-bubble outline-none focus:border-peach";
@@ -53,6 +58,79 @@ function ActionError({ state }: { state: RecordActionState | null }) {
     >
       {state.error}
     </p>
+  );
+}
+
+async function nothingToDelete(): Promise<RecordActionState> {
+  return { ok: false, error: "Nothing to delete." };
+}
+
+function FormActions({
+  submitLabel,
+  pending,
+  deleteAction,
+  confirmLine,
+}: {
+  submitLabel: string;
+  pending: boolean;
+  deleteAction?: (
+    state: RecordActionState | null,
+    formData: FormData,
+  ) => Promise<RecordActionState>;
+  confirmLine?: string;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleteState, runDelete, deleting] = useActionState(
+    deleteAction ?? nothingToDelete,
+    null,
+  );
+  const busy = pending || deleting;
+  const canDelete = Boolean(deleteAction);
+
+  return (
+    <>
+      <ActionError state={deleteState} />
+      {confirming && confirmLine ? (
+        <p className="text-[0.92rem] font-semibold text-muted">{confirmLine}</p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <button className={primaryBtn} type="submit" disabled={busy}>
+          {pending ? "Saving…" : submitLabel}
+        </button>
+        {canDelete ? (
+          confirming ? (
+            <>
+              <button
+                className={dangerBtn}
+                formAction={runDelete}
+                formNoValidate
+                type="submit"
+                disabled={busy}
+              >
+                {deleting ? "Deleting…" : "Yes, delete it"}
+              </button>
+              <button
+                className={quietBtn}
+                type="button"
+                disabled={busy}
+                onClick={() => setConfirming(false)}
+              >
+                Never mind
+              </button>
+            </>
+          ) : (
+            <button
+              className={dangerBtn}
+              type="button"
+              disabled={busy}
+              onClick={() => setConfirming(true)}
+            >
+              Delete
+            </button>
+          )
+        ) : null}
+      </div>
+    </>
   );
 }
 
@@ -216,11 +294,14 @@ export function LeadForm({
           Saved.
         </p>
       ) : null}
-      <div>
-        <button className={primaryBtn} type="submit" disabled={pending}>
-          {pending ? "Saving…" : submitLabel}
-        </button>
-      </div>
+      <FormActions
+        submitLabel={submitLabel}
+        pending={pending}
+        deleteAction={lead ? deleteLeadAction : undefined}
+        confirmLine={
+          lead ? `Delete ${lead.name}? Draft follow-ups for them leave the list too.` : undefined
+        }
+      />
     </form>
   );
 }
@@ -258,11 +339,16 @@ export function InvoiceForm({
           Saved.
         </p>
       ) : null}
-      <div>
-        <button className={primaryBtn} type="submit" disabled={pending}>
-          {pending ? "Saving…" : submitLabel}
-        </button>
-      </div>
+      <FormActions
+        submitLabel={submitLabel}
+        pending={pending}
+        deleteAction={invoice ? deleteInvoiceAction : undefined}
+        confirmLine={
+          invoice
+            ? `Delete invoice #${invoice.invoiceNumber}? Draft reminders for it leave the list too.`
+            : undefined
+        }
+      />
     </form>
   );
 }

@@ -17,6 +17,7 @@ function wrapSheetsError(tab: string, err: unknown): never {
 export class GoogleSheetsGateway implements SheetsGateway {
   private sheets: ReturnType<typeof google.sheets>;
   private readonly config: SheetsConfig;
+  private readonly sheetIds = new Map<string, number>();
 
   constructor(config: SheetsConfig) {
     const auth = new google.auth.GoogleAuth({
@@ -79,5 +80,56 @@ export class GoogleSheetsGateway implements SheetsGateway {
     } catch (err) {
       wrapSheetsError(tab, err);
     }
+  }
+
+  async deleteRow(tab: string, dataRowIndex: number): Promise<void> {
+    const sheetId = await this.sheetIdForTab(tab);
+    const startIndex = dataRowIndex + 1;
+    try {
+      await this.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: this.config.spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              deleteDimension: {
+                range: {
+                  sheetId,
+                  dimension: "ROWS",
+                  startIndex,
+                  endIndex: startIndex + 1,
+                },
+              },
+            },
+          ],
+        },
+      });
+    } catch (err) {
+      wrapSheetsError(tab, err);
+    }
+  }
+
+  private async sheetIdForTab(tab: string): Promise<number> {
+    const cached = this.sheetIds.get(tab);
+    if (cached != null) return cached;
+    try {
+      const res = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.config.spreadsheetId,
+        fields: "sheets.properties(sheetId,title)",
+      });
+      for (const sheet of res.data.sheets ?? []) {
+        const title = sheet.properties?.title;
+        const sheetId = sheet.properties?.sheetId;
+        if (title && sheetId != null) this.sheetIds.set(title, sheetId);
+      }
+    } catch (err) {
+      wrapSheetsError(tab, err);
+    }
+    const sheetId = this.sheetIds.get(tab);
+    if (sheetId == null) {
+      throw new Error(
+        `Couldn’t use Google Sheet tab "${tab}". Share the Sheet with the service account as Editor, check GOOGLE_SHEETS_SPREADSHEET_ID, and keep tab names leads / invoices / nudge_log. No tab named "${tab}".`,
+      );
+    }
+    return sheetId;
   }
 }

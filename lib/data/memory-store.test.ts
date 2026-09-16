@@ -141,6 +141,40 @@ describe("MemoryDataStore", () => {
     );
   });
 
+  it("deletes leads and invoices and drops related draft nudges", async () => {
+    const store = freshStore();
+    const extraDraft = await store.createNudgeDraft({
+      kind: "follow_up",
+      relatedId: "lead_001",
+      draftText: "Second ping",
+    });
+
+    await store.deleteLead("lead_001");
+    assert.equal(await store.getLead("lead_001"), null);
+    assert.ok((await store.listLeads()).some((lead) => lead.id === "lead_002"));
+    const afterLead = await store.listNudges();
+    assert.equal(
+      afterLead.some((nudge) => nudge.id === "nudge_001" || nudge.id === extraDraft.id),
+      false,
+    );
+    assert.equal(afterLead.some((nudge) => nudge.id === "nudge_002"), true);
+
+    const invoiceDraft = await store.createNudgeDraft({
+      kind: "invoice",
+      relatedId: "inv_001",
+      draftText: "Please pay",
+    });
+    await store.deleteInvoice("inv_001");
+    assert.equal(await store.getInvoice("inv_001"), null);
+    assert.ok((await store.listInvoices()).some((invoice) => invoice.id === "inv_002"));
+    const afterInvoice = await store.listNudges();
+    assert.equal(afterInvoice.some((nudge) => nudge.id === invoiceDraft.id), false);
+    assert.equal(afterInvoice.some((nudge) => nudge.id === "nudge_002"), true);
+
+    await assert.rejects(() => store.deleteLead("lead_missing"), /No lead with id lead_missing/);
+    await assert.rejects(() => store.deleteInvoice("inv_missing"), /No invoice with id inv_missing/);
+  });
+
   it("persists mutations through the optional snapshot writer", async () => {
     const writes: StoreSnapshot[] = [];
     const store = new MemoryDataStore(
@@ -154,6 +188,10 @@ describe("MemoryDataStore", () => {
     });
     assert.equal(writes.length, 1);
     assert.equal(writes[0].nudges[0]?.draftText, "Ping");
+
+    await store.deleteLead("lead_001");
+    assert.equal(writes.at(-1)?.leads.some((lead) => lead.id === "lead_001"), false);
+    assert.equal(writes.at(-1)?.nudges.length, 0);
   });
 });
 

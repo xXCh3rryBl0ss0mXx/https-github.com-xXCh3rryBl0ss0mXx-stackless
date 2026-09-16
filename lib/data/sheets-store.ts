@@ -117,6 +117,13 @@ export class SheetsDataStore implements DataStore {
     return lead;
   }
 
+  async deleteLead(id: string): Promise<void> {
+    const table = await this.gateway.read(LEAD_TAB);
+    const { index } = this.requireRow(LEAD_TAB, table, id);
+    await this.gateway.deleteRow(LEAD_TAB, index);
+    await this.deleteRelatedDraftNudges(id);
+  }
+
   async createInvoice(input: InvoiceWrite): Promise<Invoice> {
     const table = await this.gateway.read(INVOICE_TAB);
     const invoices = this.invoicesFromTable(table);
@@ -152,6 +159,13 @@ export class SheetsDataStore implements DataStore {
       fieldsToCells(table.headers, invoiceToFields(invoice), table.rows[index]),
     );
     return invoice;
+  }
+
+  async deleteInvoice(id: string): Promise<void> {
+    const table = await this.gateway.read(INVOICE_TAB);
+    const { index } = this.requireRow(INVOICE_TAB, table, id);
+    await this.gateway.deleteRow(INVOICE_TAB, index);
+    await this.deleteRelatedDraftNudges(id);
   }
 
   async createNudgeDraft(input: {
@@ -272,6 +286,18 @@ export class SheetsDataStore implements DataStore {
       index,
       fieldsToCells(table.headers, leadToFields(lead), table.rows[index]),
     );
+  }
+
+  private async deleteRelatedDraftNudges(relatedId: string): Promise<void> {
+    const table = await this.gateway.read(NUDGE_TAB);
+    const indices = this.nudgesFromTable(table)
+      .filter((nudge) => nudge.relatedId === relatedId && nudge.status === "draft")
+      .map((nudge) => findRowIndex(table.headers, table.rows, nudge.id))
+      .filter((index) => index >= 0)
+      .sort((a, b) => b - a);
+    for (const index of indices) {
+      await this.gateway.deleteRow(NUDGE_TAB, index);
+    }
   }
 
   private async patchInvoice(id: string, patch: Partial<Invoice>): Promise<void> {
