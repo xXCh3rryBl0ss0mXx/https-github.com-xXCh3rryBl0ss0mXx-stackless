@@ -4,7 +4,7 @@ Marketing landing for Stackless — a quiet inbox helper for freelancers.
 
 Early access signup uses [Clerk](https://clerk.com) **Waitlist** mode (email in, you’re on the list). Use **email only** — no Google, no phone.
 
-The paid product loop lives at **`/app`** (Clerk-gated when keys are set): add and edit people and invoices, follow-ups and overdue invoices, editable drafts, send email via Resend, skip.
+The paid product loop lives at **`/app`** (Clerk-gated when keys are set, then a **$19/month** Stripe subscription): add and edit people and invoices, follow-ups and overdue invoices, editable drafts, send email via Resend, skip. Waitlist signup still exists; the workspace itself requires an active subscription.
 
 The Clerk application for this project is:
 
@@ -32,9 +32,9 @@ Open [http://localhost:3000](http://localhost:3000).
 - Signed in: **Today’s List** (opens `/app`) sits next to your Clerk profile button (UserButton). Signed out (and while Clerk loads, or without Clerk keys) the header only shows **Sign Up**.
 - The profile menu still has **Manage account** and **Sign out**. Manage account opens the peach `/account` page (Clerk profile options, not a black Clerk portal). Sign out still signs you out.
 - `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
-- `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can add people and invoices. With keys, signed-out visits go to the peach `/sign-in` page (not Clerk’s hosted Account Portal), then back to `/app`. Unsigned `/account` visits go to the same peach Sign In, then back to `/account`.
+- `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can add people and invoices. With keys, signed-out visits go to the peach `/sign-in` page (not Clerk’s hosted Account Portal), then back to `/app`. Signed in without an active Stripe subscription, `/app` shows a peach **paywall** (Subscribe — $19/month), not a crash. Unsigned `/account` visits go to the same peach Sign In, then back to `/account`.
 
-`npm run build` works **without** Clerk keys. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the keys. Vercel preview/production **do** need the keys, then a **Redeploy**.
+`npm run build` works **without** Clerk, Stripe, Resend, or Google keys. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the Clerk keys. Checkout is disabled until Stripe keys + `STRIPE_PRICE_ID` are set. Vercel preview/production **do** need Clerk (and Stripe for payments), then a **Redeploy**.
 
 ## Today’s List (`/app`)
 
@@ -47,6 +47,57 @@ Two queues: people whose follow-up date is due, and open invoices past their due
 **Send later** (on the same card): pick a future date/time, or a shortcut like **In 3 days**, then **Save draft**. Status stays `draft` until the mail goes out. A daily Vercel Cron job (`/api/cron/send-due-nudges`, 15:00 UTC) sends due drafts through the same Resend path as **Send email**. Unscheduled drafts are not auto-sent.
 
 Until a Google Sheet is connected, the default store is in-memory and **starts empty** — add a person or an invoice from `/app`. The CSVs in [`data/`](data/) are header rows only (a Sheets copy can be empty headers too). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy. **Production auto-sends need Sheets** (`STACKLESS_DATA_STORE=sheets`) so a scheduled draft is still there when cron runs.
+
+### Stripe ($19/month — required for the live workspace)
+
+One plan: **$19/month**. Hosted [Stripe Checkout](https://stripe.com/docs/payments/checkout) to subscribe, [Customer Portal](https://stripe.com/docs/customer-management) to cancel or update the card. The webhook writes `{ stripeCustomerId, subscriptionStatus }` onto the Clerk user (`publicMetadata` + `privateMetadata`). **Send** and the rest of `/app` check that status.
+
+The site still **builds** without Stripe keys. With Clerk on and Stripe missing, `/app` shows a peach paywall that explains which env var to add (Checkout is disabled). Secrets stay server-only except `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+
+#### 1. Create the $19/month Price (Stripe Dashboard)
+
+1. Open [https://dashboard.stripe.com](https://dashboard.stripe.com) (use **test** mode first, then live).
+2. **Product catalog** → **Add product**.
+3. Name it `Stackless`. Description can be “Today’s List — follow-ups and invoice nudges.”
+4. Price: **Recurring** → **$19.00 USD** → **Monthly**. Do **not** hardcode this Price id in the repo.
+5. Save. Copy the **Price ID** (`price_...`) into `STRIPE_PRICE_ID`.
+
+#### 2. Turn on the Customer Portal
+
+1. Stripe Dashboard → **Settings** → **Billing** → **Customer portal**.
+2. Enable it. Allow customers to **cancel subscriptions** and **update payment methods**.
+3. Save. No portal link in code — `/app` and `/account` open a portal session when the user already has a Stripe customer id.
+
+#### 3. Webhook (production)
+
+1. **Developers** → **Webhooks** → **Add endpoint**.
+2. Endpoint URL: `https://www.stackless.lol/api/stripe/webhook` (the Next.js route in this repo).
+3. Select events:
+   - `checkout.session.completed`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+4. Add endpoint. Open it → **Signing secret** → copy `whsec_...` into `STRIPE_WEBHOOK_SECRET`.
+5. Copy **API keys**: Secret (`sk_test_` / `sk_live_`) → `STRIPE_SECRET_KEY`. Publishable (`pk_test_` / `pk_live_`) → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+
+Locally you can forward events with `stripe listen --forward-to localhost:3000/api/stripe/webhook` and use the `whsec_` it prints.
+
+#### 4. Michael’s Vercel steps
+
+Preview/production stay on the paywall until this is done, then **Redeploy**.
+
+1. Open the Stackless project on [Vercel](https://vercel.com).
+2. **Settings** → **Environment Variables**. Add all four, for **Production**, **Preview**, and **Development**:
+   - `STRIPE_SECRET_KEY`
+   - `STRIPE_WEBHOOK_SECRET`
+   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+   - `STRIPE_PRICE_ID`
+3. Never prefix the secret key or webhook secret with `NEXT_PUBLIC_`.
+4. Confirm the webhook URL in Stripe is the **production** site: `https://www.stackless.lol/api/stripe/webhook`.
+5. **Deployments** → latest → **⋯** → **Redeploy**.
+
+After that: sign in → `/app` → **Subscribe — $19/month** → Stripe Checkout. Webhook marks the Clerk user `subscriptionStatus: "active"`. **Billing** on `/app` and `/account` opens the Customer Portal.
+
+Checkout, Portal, and the webhook import the `stripe` package on the server only (`lib/stripe/client.ts`, `app/api/stripe/webhook/route.ts`, `app/app/billing-actions.ts`).
 
 ### Resend (required to actually send)
 

@@ -6,7 +6,7 @@ import { invoiceWriteFromForm, leadWriteFromForm } from "@/lib/data/record-input
 import { getDataStore } from "@/lib/data/store";
 import type { Nudge, NudgeKind } from "@/lib/data/types";
 import { deliverNudgeDraft } from "@/lib/email/deliver";
-import { requireSignedIn } from "@/lib/require-signed-in";
+import { assertPaidAccess, requirePaidAccess } from "@/lib/stripe/billing";
 import { scheduledForFromInput } from "@/lib/schedule";
 import { todayStamp } from "@/lib/today";
 
@@ -66,7 +66,7 @@ async function upsertDraft(formData: FormData): Promise<Nudge> {
 }
 
 export async function saveDraftAction(formData: FormData) {
-  await requireSignedIn();
+  await assertPaidAccess();
   await upsertDraft(formData);
   revalidatePath("/app");
 }
@@ -77,7 +77,8 @@ export async function sendNudgeAction(
   _prev: SendNudgeActionState | null,
   formData: FormData,
 ): Promise<SendNudgeActionState> {
-  await requireSignedIn();
+  const access = await requirePaidAccess();
+  if (!access.ok) return { ok: false, error: access.error };
   try {
     const nudgeId = String(formData.get("nudgeId") ?? "");
     const store = getDataStore();
@@ -100,7 +101,7 @@ export async function sendNudgeAction(
 }
 
 export async function skipAction(formData: FormData) {
-  await requireSignedIn();
+  await assertPaidAccess();
   const draft = await upsertDraft(formData);
   await getDataStore().markNudgeSkipped(draft.id);
   revalidatePath("/app");
@@ -119,7 +120,8 @@ export async function createLeadAction(
   _prev: RecordActionState | null,
   formData: FormData,
 ): Promise<RecordActionState> {
-  await requireSignedIn();
+  const access = await requirePaidAccess();
+  if (!access.ok) return access;
   try {
     await getDataStore().createLead(leadWriteFromForm(formData));
     revalidatePath("/app");
@@ -133,7 +135,8 @@ export async function updateLeadAction(
   _prev: RecordActionState | null,
   formData: FormData,
 ): Promise<RecordActionState> {
-  await requireSignedIn();
+  const access = await requirePaidAccess();
+  if (!access.ok) return access;
   try {
     const id = String(formData.get("id") ?? "").trim();
     if (!id) throw new Error("Missing lead id.");
@@ -149,7 +152,8 @@ export async function createInvoiceAction(
   _prev: RecordActionState | null,
   formData: FormData,
 ): Promise<RecordActionState> {
-  await requireSignedIn();
+  const access = await requirePaidAccess();
+  if (!access.ok) return access;
   try {
     await getDataStore().createInvoice(invoiceWriteFromForm(formData));
     revalidatePath("/app");
@@ -163,7 +167,8 @@ export async function updateInvoiceAction(
   _prev: RecordActionState | null,
   formData: FormData,
 ): Promise<RecordActionState> {
-  await requireSignedIn();
+  const access = await requirePaidAccess();
+  if (!access.ok) return access;
   try {
     const id = String(formData.get("id") ?? "").trim();
     if (!id) throw new Error("Missing invoice id.");
@@ -179,7 +184,8 @@ export async function deleteLeadAction(
   _prev: RecordActionState | null,
   formData: FormData,
 ): Promise<RecordActionState> {
-  await requireSignedIn();
+  const access = await requirePaidAccess();
+  if (!access.ok) return access;
   try {
     const id = String(formData.get("id") ?? "").trim();
     if (!id) throw new Error("Missing lead id.");
@@ -195,7 +201,8 @@ export async function deleteInvoiceAction(
   _prev: RecordActionState | null,
   formData: FormData,
 ): Promise<RecordActionState> {
-  await requireSignedIn();
+  const access = await requirePaidAccess();
+  if (!access.ok) return access;
   try {
     const id = String(formData.get("id") ?? "").trim();
     if (!id) throw new Error("Missing invoice id.");
