@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { NudgeBoard } from "@/components/nudge-board";
+import { PastDueBanner, Paywall } from "@/components/paywall";
 import { AddRecords, AllRecords } from "@/components/records-board";
 import { getDataStore } from "@/lib/data/store";
 import type { Invoice, Lead, Nudge } from "@/lib/data/types";
 import { requireSignedIn } from "@/lib/require-signed-in";
+import { getBillingState, syncCheckoutSession } from "@/lib/stripe/billing";
 import { todayStamp } from "@/lib/today";
 
 export const metadata: Metadata = {
@@ -34,8 +36,29 @@ function StoreError({ message }: { message: string }) {
   );
 }
 
-export default async function AppPage() {
+export default async function AppPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string; session_id?: string }>;
+}) {
   await requireSignedIn();
+  const { checkout, session_id: sessionId } = await searchParams;
+  let billing = await getBillingState();
+  if (sessionId && billing.kind !== "open" && billing.kind !== "active") {
+    const synced = await syncCheckoutSession(sessionId);
+    if (synced) billing = synced;
+  }
+  if (billing.kind === "inactive" || billing.kind === "setup") {
+    return (
+      <Paywall
+        setupMessage={billing.message}
+        canCheckout={billing.canCheckout}
+        canManageBilling={billing.canManageBilling}
+        checkoutStatus={checkout}
+        subscriptionStatus={billing.subscriptionStatus}
+      />
+    );
+  }
   const today = todayStamp();
 
   let dueLeads: Lead[];
@@ -72,6 +95,7 @@ export default async function AppPage() {
           draft — we’ll still send it when it’s due if you’re offline.
         </p>
       </div>
+      {billing.subscriptionStatus === "past_due" ? <PastDueBanner /> : null}
       <AddRecords today={today} />
       <NudgeBoard
         leads={dueLeads}

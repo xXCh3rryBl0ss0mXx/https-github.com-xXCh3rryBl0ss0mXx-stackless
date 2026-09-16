@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/data/memory-store.test.ts lib/data/sheets-map.test.ts lib/data/sheets-store.test.ts lib/data/due-nudges.test.ts lib/clerk-paths.test.ts lib/email/send.test.ts lib/schedule.test.ts lib/cron/send-due-nudges.test.ts"
+    "test": "tsx --test lib/data/memory-store.test.ts lib/data/sheets-map.test.ts lib/data/sheets-store.test.ts lib/data/due-nudges.test.ts lib/clerk-paths.test.ts lib/email/send.test.ts lib/schedule.test.ts lib/cron/send-due-nudges.test.ts lib/stripe/config.test.ts lib/stripe/subscription.test.ts lib/stripe/webhook.test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.3",
@@ -18,7 +18,8 @@
     "next": "16.2.11",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "resend": "^6.28.1"
+    "resend": "^6.28.1",
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
