@@ -4,7 +4,7 @@ Marketing landing for Stackless — a quiet inbox helper for freelancers.
 
 Early access signup uses [Clerk](https://clerk.com) **Waitlist** mode (email in, you’re on the list). Use **email only** — no Google, no phone.
 
-The paid product loop lives at **`/app`** (Clerk-gated when keys are set): follow-ups and overdue invoices, editable drafts, mark sent, skip.
+The paid product loop lives at **`/app`** (Clerk-gated when keys are set): follow-ups and overdue invoices, editable drafts, send email via Resend, skip.
 
 The Clerk application for this project is:
 
@@ -38,9 +38,26 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Today’s List (`/app`)
 
-Two queues: people whose follow-up date is due, and open invoices past their due date. Each row has an editable draft. **Save draft**, **Mark sent**, and **Skip** all go through `DataStore` (`lib/data/types.ts`). Copy the text into your real email — Stackless does not send mail yet.
+Two queues: people whose follow-up date is due, and open invoices past their due date. Each row has an editable draft. **Save draft**, **Send email**, and **Skip** all go through `DataStore` (`lib/data/types.ts`).
+
+**Send email** asks you to confirm, then sends through [Resend](https://resend.com) to the lead/client address. Subjects are **Quick check-in** (follow-ups) and **Invoice reminder** (invoices); the body is the draft you edited. The nudge is marked `sent` (with `sentAt`) **only if Resend accepts the mail**. If it fails — missing keys, bad from-address, Resend error — the draft stays a draft and the peach error on the card tells you why. Nothing is sent on a schedule yet (no Vercel Cron in this version).
 
 Until a Google Sheet is connected, the default store is the seed CSVs in [`data/`](data/). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy.
+
+### Resend (required to actually send)
+
+The site still **builds** without these. Send email will say **Add RESEND_API_KEY** until you paste a real key (no sample secrets).
+
+1. Make an account at [resend.com](https://resend.com).
+2. Open [API Keys](https://resend.com/api-keys) → **Create API Key** → copy it.
+3. Put it in `.env.local` as `RESEND_API_KEY=`.
+4. Set `RESEND_FROM_EMAIL`:
+   - **Testing:** `Stackless <onboarding@resend.dev>` — Resend’s onboarding address. It can only send **to the email on your Resend account**, not to random clients.
+   - **Real client mail:** [Domains](https://resend.com/domains) → add your domain → add the DNS records they show → wait until it says verified. Then use an address on that domain, like `Stackless <hello@yourdomain.com>`.
+5. Restart `npm run dev`. Tap **Send email** on `/app`, confirm, and check the inbox (or Resend’s **Emails** log).
+6. On Vercel: **Settings** → **Environment Variables** → add `RESEND_API_KEY` and `RESEND_FROM_EMAIL` for Production / Preview / Development → **Redeploy**.
+
+The send path is server-only (`sendNudgeAction` in `app/app/actions.ts`). The `resend` package is never imported from a client component.
 
 ### Google Sheets (later — not required)
 

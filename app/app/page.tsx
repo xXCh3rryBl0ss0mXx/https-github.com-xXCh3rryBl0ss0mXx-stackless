@@ -31,8 +31,8 @@ export default async function AppPage() {
           Who needs a nudge
         </h1>
         <p className="max-w-[40rem] text-muted">
-          Draft a message, copy it into your email, then mark it sent. Nothing
-          goes out by itself yet.
+          Write the note, then tap Send email. We only mark it sent if the
+          email really goes out.
         </p>
       </div>
       <NudgeBoard leads={leads} invoices={invoices} nudges={nudges} today={today} />
