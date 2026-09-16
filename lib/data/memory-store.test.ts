@@ -141,6 +141,52 @@ describe("MemoryDataStore", () => {
     );
   });
 
+  it("deletes leads and their draft nudges, leaving sent history", async () => {
+    const writes: StoreSnapshot[] = [];
+    const store = new MemoryDataStore(
+      { leads: seedLeads, invoices: seedInvoices, nudges: seedNudges },
+      (snapshot) => writes.push(snapshot),
+    );
+    await store.deleteLead("lead_001");
+    assert.equal(await store.getLead("lead_001"), null);
+    assert.ok((await store.listLeads()).some((lead) => lead.id === "lead_002"));
+    const nudges = await store.listNudges();
+    assert.equal(
+      nudges.find((nudge) => nudge.id === "nudge_001"),
+      undefined,
+    );
+    assert.equal(nudges.find((nudge) => nudge.id === "nudge_002")?.status, "sent");
+    assert.equal(writes.length, 1);
+    assert.equal(
+      writes[0].leads.find((lead) => lead.id === "lead_001"),
+      undefined,
+    );
+    assert.equal(
+      writes[0].nudges.find((nudge) => nudge.id === "nudge_001"),
+      undefined,
+    );
+    await assert.rejects(() => store.deleteLead("lead_001"), /No lead with id lead_001/);
+  });
+
+  it("deletes invoices and their draft nudges, leaving sent history", async () => {
+    const store = freshStore();
+    const draft = await store.createNudgeDraft({
+      kind: "invoice",
+      relatedId: "inv_001",
+      draftText: "Hi Sam — still open?",
+    });
+    await store.deleteInvoice("inv_001");
+    assert.equal(await store.getInvoice("inv_001"), null);
+    assert.ok((await store.listInvoices()).some((invoice) => invoice.id === "inv_002"));
+    const nudges = await store.listNudges();
+    assert.equal(
+      nudges.find((nudge) => nudge.id === draft.id),
+      undefined,
+    );
+    assert.equal(nudges.find((nudge) => nudge.id === "nudge_002")?.status, "sent");
+    await assert.rejects(() => store.deleteInvoice("inv_001"), /No invoice with id inv_001/);
+  });
+
   it("persists mutations through the optional snapshot writer", async () => {
     const writes: StoreSnapshot[] = [];
     const store = new MemoryDataStore(

@@ -30,6 +30,14 @@ class MemorySheetsGateway implements SheetsGateway {
   async updateRow(tab: string, dataRowIndex: number, values: string[]): Promise<void> {
     this.tables[tab].rows[dataRowIndex] = [...values];
   }
+
+  async deleteRow(tab: string, dataRowIndex: number): Promise<void> {
+    const table = this.tables[tab];
+    if (dataRowIndex < 0 || dataRowIndex >= table.rows.length) {
+      throw new Error(`No row ${dataRowIndex} on ${tab}`);
+    }
+    table.rows.splice(dataRowIndex, 1);
+  }
 }
 
 function seededGateway() {
@@ -187,5 +195,87 @@ describe("SheetsDataStore", () => {
     assert.equal(invoice?.paymentLink, undefined);
     assert.equal(invoice?.lastNudgedAt, undefined);
     assert.equal(invoice?.amountUsd, 50);
+  });
+
+  it("deletes lead and invoice rows, plus related draft nudges", async () => {
+    const gateway = new MemorySheetsGateway({
+      leads: {
+        headers: [...LEAD_COLUMNS],
+        rows: seedLeads.map((lead) => fieldsToCells([...LEAD_COLUMNS], leadToFields(lead))),
+      },
+      invoices: {
+        headers: [...INVOICE_COLUMNS],
+        rows: seedInvoices.map((invoice) =>
+          fieldsToCells([...INVOICE_COLUMNS], invoiceToFields(invoice)),
+        ),
+      },
+      nudge_log: {
+        headers: [...NUDGE_COLUMNS],
+        rows: [
+          ...seedNudges.map((nudge) => fieldsToCells([...NUDGE_COLUMNS], nudgeToFields(nudge))),
+          fieldsToCells(
+            [...NUDGE_COLUMNS],
+            nudgeToFields({
+              id: "nudge_010",
+              kind: "follow_up",
+              relatedId: "lead_001",
+              channel: "email",
+              draftText: "Second draft",
+              status: "draft",
+              createdAt: "2026-09-15",
+            }),
+          ),
+          fieldsToCells(
+            [...NUDGE_COLUMNS],
+            nudgeToFields({
+              id: "nudge_011",
+              kind: "invoice",
+              relatedId: "inv_001",
+              channel: "email",
+              draftText: "Pay up?",
+              status: "draft",
+              createdAt: "2026-09-15",
+            }),
+          ),
+        ],
+      },
+    });
+    const store = new SheetsDataStore({ gateway });
+
+    await store.deleteLead("lead_001");
+    assert.equal(await store.getLead("lead_001"), null);
+    assert.ok((await store.listLeads()).some((lead) => lead.id === "lead_002"));
+    const afterLead = await store.listNudges();
+    assert.equal(
+      afterLead.find((nudge) => nudge.id === "nudge_001"),
+      undefined,
+    );
+    assert.equal(
+      afterLead.find((nudge) => nudge.id === "nudge_010"),
+      undefined,
+    );
+    assert.equal(afterLead.find((nudge) => nudge.id === "nudge_002")?.status, "sent");
+    const leadRows = (await gateway.read("leads")).rows;
+    assert.equal(
+      leadRows.some((row) => row[0] === "lead_001"),
+      false,
+    );
+
+    await store.deleteInvoice("inv_001");
+    assert.equal(await store.getInvoice("inv_001"), null);
+    const afterInvoice = await store.listNudges();
+    assert.equal(
+      afterInvoice.find((nudge) => nudge.id === "nudge_011"),
+      undefined,
+    );
+    assert.equal(afterInvoice.find((nudge) => nudge.id === "nudge_002")?.status, "sent");
+    const invoiceRows = (await gateway.read("invoices")).rows;
+    assert.equal(
+      invoiceRows.some((row) => row[0] === "inv_001"),
+      false,
+    );
+
+    await assert.rejects(() => store.deleteLead("lead_001"), /No lead with id lead_001/);
+    await assert.rejects(() => store.deleteInvoice("inv_001"), /No invoice with id inv_001/);
   });
 });

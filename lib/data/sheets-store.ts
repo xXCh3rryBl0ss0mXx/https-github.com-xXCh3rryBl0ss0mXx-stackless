@@ -117,6 +117,13 @@ export class SheetsDataStore implements DataStore {
     return lead;
   }
 
+  async deleteLead(id: string): Promise<void> {
+    const table = await this.gateway.read(LEAD_TAB);
+    const { index } = this.requireRow(LEAD_TAB, table, id);
+    await this.gateway.deleteRow(LEAD_TAB, index);
+    await this.deleteRelatedDraftNudges(id);
+  }
+
   async createInvoice(input: InvoiceWrite): Promise<Invoice> {
     const table = await this.gateway.read(INVOICE_TAB);
     const invoices = this.invoicesFromTable(table);
@@ -152,6 +159,13 @@ export class SheetsDataStore implements DataStore {
       fieldsToCells(table.headers, invoiceToFields(invoice), table.rows[index]),
     );
     return invoice;
+  }
+
+  async deleteInvoice(id: string): Promise<void> {
+    const table = await this.gateway.read(INVOICE_TAB);
+    const { index } = this.requireRow(INVOICE_TAB, table, id);
+    await this.gateway.deleteRow(INVOICE_TAB, index);
+    await this.deleteRelatedDraftNudges(id);
   }
 
   async createNudgeDraft(input: {
@@ -285,5 +299,21 @@ export class SheetsDataStore implements DataStore {
       index,
       fieldsToCells(table.headers, invoiceToFields(invoice), table.rows[index]),
     );
+  }
+
+  /** Drop draft nudges for a deleted lead/invoice so Recent nudges can't send to a missing row. */
+  private async deleteRelatedDraftNudges(relatedId: string): Promise<void> {
+    const table = await this.gateway.read(NUDGE_TAB);
+    const indexes: number[] = [];
+    for (let i = 0; i < table.rows.length; i += 1) {
+      const row = zipRow(table.headers, table.rows[i] ?? []);
+      if (!row.id?.trim()) continue;
+      if (row.related_id === relatedId && row.status === "draft") {
+        indexes.push(i);
+      }
+    }
+    for (const index of indexes.sort((a, b) => b - a)) {
+      await this.gateway.deleteRow(NUDGE_TAB, index);
+    }
   }
 }

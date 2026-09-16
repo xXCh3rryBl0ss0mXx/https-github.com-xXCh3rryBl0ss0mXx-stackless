@@ -78,4 +78,4 @@ Leave `STACKLESS_DATA_STORE=memory` if you have not done this yet.
 
 ## Thin adapter
 
-App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. `MemoryDataStore` and `SheetsDataStore` both implement the same create/update methods for leads and invoices. When you leave Sheets for a real database, swap the guts of those functions, not the whole app.
+App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. `MemoryDataStore` and `SheetsDataStore` both implement the same create/update/delete methods for leads and invoices. Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. When you leave Sheets for a real database, swap the guts of those functions, not the whole app.

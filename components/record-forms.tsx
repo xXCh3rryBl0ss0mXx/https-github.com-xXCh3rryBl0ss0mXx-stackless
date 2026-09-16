@@ -4,6 +4,8 @@ import { useActionState, useState } from "react";
 import {
   createInvoiceAction,
   createLeadAction,
+  deleteInvoiceAction,
+  deleteLeadAction,
   updateInvoiceAction,
   updateLeadAction,
   type RecordActionState,
@@ -21,6 +23,9 @@ const quietBtn =
 
 const mintBtn =
   "cursor-pointer rounded-full border-0 bg-mint px-4 py-2 font-[inherit] text-[0.9rem] font-extrabold text-[#145c3d] disabled:cursor-not-allowed disabled:opacity-60";
+
+const peachBtn =
+  "cursor-pointer rounded-full border border-peach bg-badge-bg px-4 py-2 font-[inherit] text-[0.9rem] font-extrabold text-badge-fg disabled:cursor-not-allowed disabled:opacity-60";
 
 const fieldClass =
   "w-full rounded-[16px] border border-line bg-white px-3 py-2 font-[inherit] text-[0.95rem] text-bubble outline-none focus:border-peach";
@@ -53,6 +58,82 @@ function ActionError({ state }: { state: RecordActionState | null }) {
     >
       {state.error}
     </p>
+  );
+}
+
+function SaveButton({
+  pending,
+  disabled,
+  label,
+}: {
+  pending: boolean;
+  disabled?: boolean;
+  label: string;
+}) {
+  return (
+    <button className={primaryBtn} type="submit" disabled={disabled ?? pending}>
+      {pending ? "Saving…" : label}
+    </button>
+  );
+}
+
+function EditActions({
+  pending,
+  submitLabel,
+  confirmLine,
+  deleteAction,
+}: {
+  pending: boolean;
+  submitLabel: string;
+  confirmLine: string;
+  deleteAction: (
+    state: RecordActionState | null,
+    formData: FormData,
+  ) => Promise<RecordActionState>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleteState, deleteFormAction, deleting] = useActionState(deleteAction, null);
+  const busy = pending || deleting;
+
+  return (
+    <>
+      <ActionError state={deleteState} />
+      {confirming ? (
+        <p className="text-[0.92rem] font-semibold text-muted">{confirmLine}</p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <SaveButton pending={pending} disabled={busy} label={submitLabel} />
+        {confirming ? (
+          <>
+            <button
+              className={peachBtn}
+              formAction={deleteFormAction}
+              type="submit"
+              disabled={busy}
+            >
+              {deleting ? "Deleting…" : "Yes, delete"}
+            </button>
+            <button
+              className={quietBtn}
+              type="button"
+              disabled={busy}
+              onClick={() => setConfirming(false)}
+            >
+              Never mind
+            </button>
+          </>
+        ) : (
+          <button
+            className={peachBtn}
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirming(true)}
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -216,11 +297,18 @@ export function LeadForm({
           Saved.
         </p>
       ) : null}
-      <div>
-        <button className={primaryBtn} type="submit" disabled={pending}>
-          {pending ? "Saving…" : submitLabel}
-        </button>
-      </div>
+      {lead ? (
+        <EditActions
+          pending={pending}
+          submitLabel={submitLabel}
+          confirmLine={`Delete ${lead.name}? Draft follow-ups for them go too.`}
+          deleteAction={deleteLeadAction}
+        />
+      ) : (
+        <div>
+          <SaveButton pending={pending} label={submitLabel} />
+        </div>
+      )}
     </form>
   );
 }
@@ -258,11 +346,18 @@ export function InvoiceForm({
           Saved.
         </p>
       ) : null}
-      <div>
-        <button className={primaryBtn} type="submit" disabled={pending}>
-          {pending ? "Saving…" : submitLabel}
-        </button>
-      </div>
+      {invoice ? (
+        <EditActions
+          pending={pending}
+          submitLabel={submitLabel}
+          confirmLine={`Delete invoice #${invoice.invoiceNumber}? Draft reminders for it go too.`}
+          deleteAction={deleteInvoiceAction}
+        />
+      ) : (
+        <div>
+          <SaveButton pending={pending} label={submitLabel} />
+        </div>
+      )}
     </form>
   );
 }
