@@ -10,10 +10,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/data/memory-store.test.ts lib/clerk-paths.test.ts lib/email/send.test.ts"
+    "test": "tsx --test lib/data/memory-store.test.ts lib/data/sheets-map.test.ts lib/data/sheets-store.test.ts lib/clerk-paths.test.ts lib/email/send.test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.3",
+    "googleapis": "^181.0.0",
     "next": "16.2.11",
     "react": "19.2.8",
     "react-dom": "19.2.8",

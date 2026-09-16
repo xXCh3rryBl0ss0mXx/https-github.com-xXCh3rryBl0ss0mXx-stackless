@@ -4,7 +4,7 @@ Marketing landing for Stackless — a quiet inbox helper for freelancers.
 
 Early access signup uses [Clerk](https://clerk.com) **Waitlist** mode (email in, you’re on the list). Use **email only** — no Google, no phone.
 
-The paid product loop lives at **`/app`** (Clerk-gated when keys are set): follow-ups and overdue invoices, editable drafts, send email via Resend, skip.
+The paid product loop lives at **`/app`** (Clerk-gated when keys are set): add and edit people and invoices, follow-ups and overdue invoices, editable drafts, send email via Resend, skip.
 
 The Clerk application for this project is:
 
@@ -40,6 +40,8 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Two queues: people whose follow-up date is due, and open invoices past their due date. Each row has an editable draft. **Save draft**, **Send email**, and **Skip** all go through `DataStore` (`lib/data/types.ts`).
 
+**Add a person** / **Add an invoice** sit above the queues. After you save, anyone with a follow-up date of today (or earlier) and any **open** invoice due today (or earlier) shows up so you can draft and send a nudge. **Your people** and **Your invoices** list everything for edit (status, dates, notes).
+
 **Send email** asks you to confirm, then sends through [Resend](https://resend.com) to the lead/client address. Subjects are **Quick check-in** (follow-ups) and **Invoice reminder** (invoices); the body is the draft you edited. The nudge is marked `sent` (with `sentAt`) **only if Resend accepts the mail**. If it fails — missing keys, bad from-address, Resend error — the draft stays a draft and the peach error on the card tells you why. Nothing is sent on a schedule yet (no Vercel Cron in this version).
 
 Until a Google Sheet is connected, the default store is the seed CSVs in [`data/`](data/). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy.
@@ -59,19 +61,24 @@ The site still **builds** without these. Send email will say **Add RESEND_API_KE
 
 The send path is server-only (`sendNudgeAction` in `app/app/actions.ts`). The `resend` package is never imported from a client component.
 
-### Google Sheets (later — not required)
+### Google Sheets (optional)
 
-Leave `STACKLESS_DATA_STORE=memory`. Setting it to `sheets` today throws a clear error; there are no fake API keys.
+Leave `STACKLESS_DATA_STORE=memory` until a Sheet is connected. Preview and Production work without Google. Setting `STACKLESS_DATA_STORE=sheets` without credentials shows a clear error on `/app` (no sample keys).
 
 When you want a real Sheet:
 
-1. Copy `data/leads.csv`, `data/invoices.csv`, and `data/nudge_log.csv` into one Google Sheet (tabs **leads**, **invoices**, **nudge_log**). Steps: [`data/README.md`](data/README.md).
-2. Make a Google Cloud service account and **share the Sheet** with that email (Editor).
-3. Put these in `.env.local` / Vercel (paste yours — no samples):
-   - `GOOGLE_SHEETS_SPREADSHEET_ID`
-   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-   - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
-4. Implement `SheetsDataStore` and set `STACKLESS_DATA_STORE=sheets`.
+1. Copy `data/leads.csv`, `data/invoices.csv`, and `data/nudge_log.csv` into one Google Sheet (tabs **leads**, **invoices**, **nudge_log**). Full steps: [`data/README.md`](data/README.md).
+2. In [Google Cloud Console](https://console.cloud.google.com/), create a project (or pick one) → **APIs & Services** → enable **Google Sheets API**.
+3. **IAM & Admin** → **Service Accounts** → **Create service account**. Open it → **Keys** → **Add key** → JSON. Open the JSON locally; you need `client_email` and `private_key`. Do not commit the file.
+4. Open the Sheet → **Share** → paste the service account email → **Editor** → uncheck “notify” → Share.
+5. Put these in `.env.local` / Vercel (paste yours — no samples). They are **server-only** — never prefix with `NEXT_PUBLIC_`.
+   - `GOOGLE_SHEETS_SPREADSHEET_ID` — the id in `https://docs.google.com/spreadsheets/d/THIS_PART/edit`
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL` — `client_email` from the JSON
+   - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` — `private_key` from the JSON. If it is one line, keep the `\n` sequences.
+6. Set `STACKLESS_DATA_STORE=sheets`.
+7. Restart `npm run dev` (or Redeploy on Vercel). `/app` reads and writes the three tabs.
+
+To go back to seed data, set `STACKLESS_DATA_STORE=memory` again.
 
 ## Clerk setup (do this once)
 

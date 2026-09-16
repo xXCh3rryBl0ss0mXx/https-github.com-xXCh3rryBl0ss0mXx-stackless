@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { followUpDraftText, invoiceDraftText } from "./draft-text";
 import { MemoryDataStore } from "./memory-store";
+import { invoiceWriteFromForm, leadWriteFromForm } from "./record-input";
 import { seedInvoices, seedLeads, seedNudges } from "./seed";
-import { SHEETS_NOT_WIRED, SheetsDataStore } from "./sheets-store";
 import type { StoreSnapshot } from "./types";
 
 function freshStore() {
@@ -80,6 +80,67 @@ describe("MemoryDataStore", () => {
     assert.equal((await store.getInvoice("inv_001"))?.lastNudgedAt, "2026-09-10");
   });
 
+  it("creates and updates leads, including landing them on today’s list", async () => {
+    const store = freshStore();
+    const created = await store.createLead({
+      name: "Ava Chen",
+      email: "ava@example.com",
+      company: "Chen Co",
+      status: "new",
+      nextFollowUpAt: "2026-09-16",
+      notes: "Intro call",
+    });
+    assert.equal(created.id, "lead_003");
+    assert.match(created.createdAt, /^\d{4}-\d{2}-\d{2}$/);
+
+    const due = await store.listLeadsNeedingFollowUp("2026-09-16");
+    assert.ok(due.some((lead) => lead.id === created.id));
+
+    const updated = await store.updateLead(created.id, {
+      name: "Ava Chen",
+      email: "ava@example.com",
+      status: "waiting_on_them",
+      nextFollowUpAt: "2026-10-01",
+      notes: "Pushed a week",
+    });
+    assert.equal(updated.status, "waiting_on_them");
+    assert.equal(updated.company, undefined);
+    const later = await store.listLeadsNeedingFollowUp("2026-09-16");
+    assert.ok(!later.some((lead) => lead.id === created.id));
+    assert.ok((await store.listLeads()).some((lead) => lead.id === created.id));
+  });
+
+  it("creates and updates invoices, including overdue open bills", async () => {
+    const store = freshStore();
+    const created = await store.createInvoice({
+      clientName: "Riley Moss",
+      clientEmail: "riley@example.com",
+      invoiceNumber: "1044",
+      amountUsd: 400,
+      status: "open",
+      dueDate: "2026-09-16",
+      paymentLink: "https://pay.example.com/1044",
+    });
+    assert.equal(created.id, "inv_003");
+    assert.ok(
+      (await store.listOverdueInvoices("2026-09-16")).some((invoice) => invoice.id === created.id),
+    );
+
+    const paid = await store.updateInvoice(created.id, {
+      clientName: "Riley Moss",
+      clientEmail: "riley@example.com",
+      invoiceNumber: "1044",
+      amountUsd: 400,
+      status: "paid",
+      dueDate: "2026-09-16",
+      paymentLink: "https://pay.example.com/1044",
+    });
+    assert.equal(paid.status, "paid");
+    assert.ok(
+      !(await store.listOverdueInvoices("2026-09-16")).some((invoice) => invoice.id === created.id),
+    );
+  });
+
   it("persists mutations through the optional snapshot writer", async () => {
     const writes: StoreSnapshot[] = [];
     const store = new MemoryDataStore(
@@ -109,9 +170,47 @@ describe("draft copy", () => {
   });
 });
 
-describe("SheetsDataStore stub", () => {
-  it("refuses to run until credentials are actually wired", async () => {
-    const store = new SheetsDataStore();
-    await assert.rejects(() => store.listOpenInvoices(), { message: SHEETS_NOT_WIRED });
+describe("record form parsing", () => {
+  it("reads a lead form and rejects a bad email", () => {
+    const form = new FormData();
+    form.set("name", "Ava");
+    form.set("email", "ava@example.com");
+    form.set("status", "new");
+    form.set("nextFollowUpAt", "2026-09-16");
+    assert.deepEqual(leadWriteFromForm(form), {
+      name: "Ava",
+      email: "ava@example.com",
+      company: undefined,
+      status: "new",
+      lastContactAt: undefined,
+      nextFollowUpAt: "2026-09-16",
+      notes: undefined,
+    });
+
+    const bad = new FormData();
+    bad.set("name", "Ava");
+    bad.set("email", "nope");
+    bad.set("status", "new");
+    assert.throws(() => leadWriteFromForm(bad), /email/i);
+  });
+
+  it("reads an invoice form and rejects a bad amount", () => {
+    const form = new FormData();
+    form.set("clientName", "Riley");
+    form.set("clientEmail", "riley@example.com");
+    form.set("invoiceNumber", "1044");
+    form.set("amountUsd", "400");
+    form.set("status", "open");
+    form.set("dueDate", "2026-09-16");
+    assert.equal(invoiceWriteFromForm(form).amountUsd, 400);
+
+    const bad = new FormData();
+    bad.set("clientName", "Riley");
+    bad.set("clientEmail", "riley@example.com");
+    bad.set("invoiceNumber", "1044");
+    bad.set("amountUsd", "nope");
+    bad.set("status", "open");
+    bad.set("dueDate", "2026-09-16");
+    assert.throws(() => invoiceWriteFromForm(bad), /Amount/);
   });
 });

@@ -43,5 +43,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local seed-store writes (DataStore fallback until Sheets is wired)
+# local seed-store writes (DataStore memory fallback)
 .data/

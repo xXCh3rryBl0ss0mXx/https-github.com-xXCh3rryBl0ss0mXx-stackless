@@ -1,8 +1,14 @@
+import { invoiceIsOpen, invoiceIsOverdue, leadNeedsFollowUp, newestFirst } from "./filters";
+import { nextPrefixedId } from "./ids";
+import { applyInvoiceWrite, applyLeadWrite } from "./record-input";
 import { seedInvoices, seedLeads, seedNudges } from "./seed";
+import { todayStamp } from "../today";
 import type {
   DataStore,
   Invoice,
+  InvoiceWrite,
   Lead,
+  LeadWrite,
   Nudge,
   NudgeKind,
   StoreSnapshot,
@@ -12,15 +18,10 @@ function clone<T>(value: T): T {
   return structuredClone(value);
 }
 
-function todayStamp(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export class MemoryDataStore implements DataStore {
   private leads: Lead[];
   private invoices: Invoice[];
   private nudges: Nudge[];
-  private nudgeSeq: number;
   private persist?: (snapshot: StoreSnapshot) => void;
 
   constructor(
@@ -31,37 +32,32 @@ export class MemoryDataStore implements DataStore {
     this.invoices = clone(seed?.invoices ?? seedInvoices);
     this.nudges = clone(seed?.nudges ?? seedNudges);
     this.persist = persist;
-    this.nudgeSeq = this.nudges.reduce((max, nudge) => {
-      const match = /^nudge_(\d+)$/.exec(nudge.id);
-      return match ? Math.max(max, Number(match[1])) : max;
-    }, 0);
+  }
+
+  async listLeads(): Promise<Lead[]> {
+    return newestFirst(this.leads).map(clone);
   }
 
   async listLeadsNeedingFollowUp(today: string): Promise<Lead[]> {
-    return this.leads
-      .filter((lead) => {
-        if (lead.status === "won" || lead.status === "lost") return false;
-        if (!lead.nextFollowUpAt) return true;
-        return lead.nextFollowUpAt <= today;
-      })
-      .map(clone);
+    return this.leads.filter((lead) => leadNeedsFollowUp(lead, today)).map(clone);
+  }
+
+  async listInvoices(): Promise<Invoice[]> {
+    return newestFirst(this.invoices).map(clone);
   }
 
   async listOpenInvoices(): Promise<Invoice[]> {
-    return this.invoices.filter((invoice) => invoice.status === "open").map(clone);
+    return this.invoices.filter(invoiceIsOpen).map(clone);
   }
 
   async listOverdueInvoices(today: string): Promise<Invoice[]> {
     return this.invoices
-      .filter((invoice) => invoice.status === "open" && invoice.dueDate <= today)
+      .filter((invoice) => invoiceIsOverdue(invoice, today))
       .map(clone);
   }
 
   async listNudges(): Promise<Nudge[]> {
-    return this.nudges
-      .slice()
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))
-      .map(clone);
+    return newestFirst(this.nudges).map(clone);
   }
 
   async getLead(id: string): Promise<Lead | null> {
@@ -74,15 +70,68 @@ export class MemoryDataStore implements DataStore {
     return invoice ? clone(invoice) : null;
   }
 
+  async createLead(input: LeadWrite): Promise<Lead> {
+    const lead: Lead = {
+      id: nextPrefixedId(
+        this.leads.map((row) => row.id),
+        "lead",
+      ),
+      name: input.name,
+      email: input.email,
+      status: input.status,
+      createdAt: todayStamp(),
+    };
+    applyLeadWrite(lead, input);
+    this.leads.push(lead);
+    this.flush();
+    return clone(lead);
+  }
+
+  async updateLead(id: string, input: LeadWrite): Promise<Lead> {
+    const lead = this.requireLead(id);
+    applyLeadWrite(lead, input);
+    this.flush();
+    return clone(lead);
+  }
+
+  async createInvoice(input: InvoiceWrite): Promise<Invoice> {
+    const invoice: Invoice = {
+      id: nextPrefixedId(
+        this.invoices.map((row) => row.id),
+        "inv",
+      ),
+      clientName: input.clientName,
+      clientEmail: input.clientEmail,
+      invoiceNumber: input.invoiceNumber,
+      amountUsd: input.amountUsd,
+      status: input.status,
+      dueDate: input.dueDate,
+      createdAt: todayStamp(),
+    };
+    applyInvoiceWrite(invoice, input);
+    this.invoices.push(invoice);
+    this.flush();
+    return clone(invoice);
+  }
+
+  async updateInvoice(id: string, input: InvoiceWrite): Promise<Invoice> {
+    const invoice = this.requireInvoice(id);
+    applyInvoiceWrite(invoice, input);
+    this.flush();
+    return clone(invoice);
+  }
+
   async createNudgeDraft(input: {
     kind: NudgeKind;
     relatedId: string;
     draftText: string;
     scheduledFor?: string;
   }): Promise<Nudge> {
-    this.nudgeSeq += 1;
     const nudge: Nudge = {
-      id: `nudge_${String(this.nudgeSeq).padStart(3, "0")}`,
+      id: nextPrefixedId(
+        this.nudges.map((row) => row.id),
+        "nudge",
+      ),
       kind: input.kind,
       relatedId: input.relatedId,
       channel: "email",
@@ -125,6 +174,18 @@ export class MemoryDataStore implements DataStore {
     const nudge = this.requireNudge(id);
     nudge.status = "skipped";
     this.flush();
+  }
+
+  private requireLead(id: string): Lead {
+    const lead = this.leads.find((row) => row.id === id);
+    if (!lead) throw new Error(`No lead with id ${id}`);
+    return lead;
+  }
+
+  private requireInvoice(id: string): Invoice {
+    const invoice = this.invoices.find((row) => row.id === id);
+    if (!invoice) throw new Error(`No invoice with id ${id}`);
+    return invoice;
   }
 
   private requireNudge(id: string): Nudge {
