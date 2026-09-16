@@ -61,8 +61,8 @@ export function NudgeBoard({
           Quiet leads. Edit the draft, then tap Send email.
         </p>
         {followUps.length === 0 ? (
-          <p className="rounded-[20px] border border-line bg-card p-[1.15rem] text-muted">
-            Nobody to chase today. Nice.
+          <p className="rounded-[20px] border border-line bg-follow-bg p-[1.15rem] text-muted">
+            Nobody to chase today. Add a person above, or enjoy the quiet.
           </p>
         ) : (
           <div className="grid gap-3">
@@ -113,8 +113,8 @@ export function NudgeBoard({
           Open bills past their due date. Edit the reminder, then tap Send email.
         </p>
         {overdue.length === 0 ? (
-          <p className="rounded-[20px] border border-line bg-card p-[1.15rem] text-muted">
-            No overdue invoices.
+          <p className="rounded-[20px] border border-line bg-badge-bg p-[1.15rem] text-muted">
+            No overdue invoices. Add a bill above when one is late.
           </p>
         ) : (
           <div className="grid gap-3">
@@ -164,8 +164,8 @@ export function NudgeBoard({
         <h2 className="mb-1 text-[1.5rem] font-bold tracking-[-0.02em]">Recent nudges</h2>
         <p className="mb-4 text-muted">Drafts, sent notes, and skips.</p>
         {nudges.length === 0 ? (
-          <p className="rounded-[20px] border border-line bg-card p-[1.15rem] text-muted">
-            Nothing logged yet.
+          <p className="rounded-[20px] border border-line bg-follow-bg p-[1.15rem] text-muted">
+            Nothing logged yet. Send or skip a nudge and it’ll show up here.
           </p>
         ) : (
           <div className="grid gap-3">

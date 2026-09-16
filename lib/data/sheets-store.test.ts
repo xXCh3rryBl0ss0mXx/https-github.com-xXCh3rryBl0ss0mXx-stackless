@@ -8,7 +8,7 @@ import {
   type SheetTable,
 } from "./sheets-map";
 import { SheetsDataStore } from "./sheets-store";
-import { seedInvoices, seedLeads, seedNudges } from "./seed";
+import { fixtureInvoices, fixtureLeads, fixtureNudges } from "./test-fixtures";
 import { invoiceToFields, leadToFields, nudgeToFields, fieldsToCells } from "./sheets-map";
 
 class MemorySheetsGateway implements SheetsGateway {
@@ -44,17 +44,17 @@ function seededGateway() {
   return new MemorySheetsGateway({
     leads: {
       headers: [...LEAD_COLUMNS],
-      rows: seedLeads.map((lead) => fieldsToCells([...LEAD_COLUMNS], leadToFields(lead))),
+      rows: fixtureLeads.map((lead) => fieldsToCells([...LEAD_COLUMNS], leadToFields(lead))),
     },
     invoices: {
       headers: [...INVOICE_COLUMNS],
-      rows: seedInvoices.map((invoice) =>
+      rows: fixtureInvoices.map((invoice) =>
         fieldsToCells([...INVOICE_COLUMNS], invoiceToFields(invoice)),
       ),
     },
     nudge_log: {
       headers: [...NUDGE_COLUMNS],
-      rows: seedNudges.map((nudge) => fieldsToCells([...NUDGE_COLUMNS], nudgeToFields(nudge))),
+      rows: fixtureNudges.map((nudge) => fieldsToCells([...NUDGE_COLUMNS], nudgeToFields(nudge))),
     },
   });
 }
@@ -130,11 +130,11 @@ describe("SheetsDataStore", () => {
       gateway: new MemorySheetsGateway({
         leads: {
           headers: [...LEAD_COLUMNS],
-          rows: seedLeads.map((lead) => fieldsToCells([...LEAD_COLUMNS], leadToFields(lead))),
+          rows: fixtureLeads.map((lead) => fieldsToCells([...LEAD_COLUMNS], leadToFields(lead))),
         },
         invoices: {
           headers: [...INVOICE_COLUMNS],
-          rows: seedInvoices.map((invoice) =>
+          rows: fixtureInvoices.map((invoice) =>
             fieldsToCells([...INVOICE_COLUMNS], invoiceToFields(invoice)),
           ),
         },
@@ -201,18 +201,18 @@ describe("SheetsDataStore", () => {
     const gateway = new MemorySheetsGateway({
       leads: {
         headers: [...LEAD_COLUMNS],
-        rows: seedLeads.map((lead) => fieldsToCells([...LEAD_COLUMNS], leadToFields(lead))),
+        rows: fixtureLeads.map((lead) => fieldsToCells([...LEAD_COLUMNS], leadToFields(lead))),
       },
       invoices: {
         headers: [...INVOICE_COLUMNS],
-        rows: seedInvoices.map((invoice) =>
+        rows: fixtureInvoices.map((invoice) =>
           fieldsToCells([...INVOICE_COLUMNS], invoiceToFields(invoice)),
         ),
       },
       nudge_log: {
         headers: [...NUDGE_COLUMNS],
         rows: [
-          ...seedNudges.map((nudge) => fieldsToCells([...NUDGE_COLUMNS], nudgeToFields(nudge))),
+          ...fixtureNudges.map((nudge) => fieldsToCells([...NUDGE_COLUMNS], nudgeToFields(nudge))),
           fieldsToCells(
             [...NUDGE_COLUMNS],
             nudgeToFields({

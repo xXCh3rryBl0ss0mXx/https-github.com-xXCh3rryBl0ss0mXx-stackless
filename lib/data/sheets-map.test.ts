@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { nextPrefixedId } from "./ids";
-import { seedInvoices, seedLeads, seedNudges } from "./seed";
+import { fixtureInvoices, fixtureLeads, fixtureNudges } from "./test-fixtures";
 import {
   MISSING_SHEETS_CREDS,
   normalizePrivateKey,
@@ -29,7 +29,7 @@ describe("sheets column mapping", () => {
   });
 
   it("maps snake_case lead columns to camelCase and back", () => {
-    const lead = seedLeads[0];
+    const lead = fixtureLeads[0];
     const fields = leadToFields(lead);
     assert.equal(fields.last_contact_at, "2026-09-08");
     assert.equal(fields.next_follow_up_at, "2026-09-15");
@@ -53,7 +53,7 @@ describe("sheets column mapping", () => {
   });
 
   it("maps invoices and nudges, including empty optional cells", () => {
-    const invoice = seedInvoices[1];
+    const invoice = fixtureInvoices[1];
     const invoiceFields = invoiceToFields(invoice);
     assert.equal(invoiceFields.client_name, "Alex Rivera");
     assert.equal(invoiceFields.last_nudged_at, "");
@@ -63,7 +63,7 @@ describe("sheets column mapping", () => {
     );
     assert.deepEqual(invoiceFromRow(invoiceRow), invoice);
 
-    const nudge = seedNudges[1];
+    const nudge = fixtureNudges[1];
     const nudgeFields = nudgeToFields(nudge);
     assert.equal(nudgeFields.related_id, "inv_001");
     assert.equal(nudgeFields.draft_text, nudge.draftText);

@@ -6,7 +6,7 @@ const globalForStore = globalThis as unknown as {
   stacklessMemoryStore?: MemoryDataStore;
 };
 
-/** Process singleton. Loads `.data/local-store.json` if present, else seed CSVs. */
+/** Process singleton. Loads `.data/local-store.json` if present, else an empty store. */
 export function getMemoryStore(): MemoryDataStore {
   if (!globalForStore.stacklessMemoryStore) {
     globalForStore.stacklessMemoryStore = new MemoryDataStore(

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { MemoryDataStore } from "../data/memory-store";
-import { seedInvoices, seedLeads } from "../data/seed";
+import { fixtureInvoices, fixtureLeads } from "../data/test-fixtures";
 import { MISSING_API_KEY, MISSING_FROM_EMAIL, readResendConfig } from "./config";
 import { deliverNudgeDraft } from "./deliver";
 import { sendNudgeEmail, type EmailClient } from "./send";
@@ -119,8 +119,8 @@ describe("sendNudgeEmail", () => {
 describe("deliverNudgeDraft", () => {
   function storeWithDraft() {
     return new MemoryDataStore({
-      leads: seedLeads,
-      invoices: seedInvoices,
+      leads: fixtureLeads,
+      invoices: fixtureInvoices,
       nudges: [],
     });
   }

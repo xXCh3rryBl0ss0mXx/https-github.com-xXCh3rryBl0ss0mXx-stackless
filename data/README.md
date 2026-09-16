@@ -1,8 +1,8 @@
-# Stackless starter data (Google Sheets)
+# Stackless sheet tabs (Google Sheets)
 
-Three tabs. Copy these CSVs into one Google Sheet (one tab per file).
+Three tabs. Copy these CSVs into one Google Sheet (one tab per file). They are **header rows only** — the app starts empty until you add people, invoices, and nudges.
 
-The app does **not** need a Sheet to run. Default `STACKLESS_DATA_STORE=memory` uses an in-memory copy of this seed data. Set `STACKLESS_DATA_STORE=sheets` only after the service account can edit the Sheet.
+The app does **not** need a Sheet to run. Default `STACKLESS_DATA_STORE=memory` starts with no records. Set `STACKLESS_DATA_STORE=sheets` only after the service account can edit the Sheet.
 
 ## How to make the Sheet
 

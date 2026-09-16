@@ -1,3 +1,1 @@
 id,kind,related_id,channel,draft_text,status,scheduled_for,sent_at,created_at
-nudge_001,follow_up,lead_001,email,"Hey Sam — just checking in on the website quote I sent Monday. Happy to tweak the scope if you want. Want to hop on a quick call this week?",draft,2026-09-15,,2026-09-14
-nudge_002,invoice,inv_001,email,"Hi Sam — friendly reminder that invoice #1042 ($850) is still open. I can resend the payment link if that helps. Thanks!",sent,2026-09-10,2026-09-10,2026-09-09
