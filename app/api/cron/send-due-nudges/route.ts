@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Vercel Cron (hourly) — Authorization: Bearer CRON_SECRET.
+ * Vercel Cron (daily 15:00 UTC) — Authorization: Bearer CRON_SECRET.
  * Builds without Resend/Google/Clerk keys; sends fail closed until those are set.
  */
 export async function GET(request: Request) {

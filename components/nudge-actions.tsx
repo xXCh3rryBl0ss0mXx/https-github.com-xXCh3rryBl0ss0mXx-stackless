@@ -147,7 +147,7 @@ export function NudgeActions({
           {scheduledFor ? (
             <p className="mt-2 text-[0.88rem] font-semibold text-follow-fg">
               {scheduleDue
-                ? `Due now — we’ll send it within the hour, or tap Send email.`
+                ? `Due now — we’ll send it on the next daily check, or tap Send email.`
                 : `We’ll send this ${formatScheduledFor(scheduledFor)} if you’re offline.`}
             </p>
           ) : (
@@ -165,7 +165,7 @@ export function NudgeActions({
             Last scheduled send didn’t go through: {lastError}
             {stoppedRetrying
               ? " We stopped auto-retrying. Save the draft or send it yourself."
-              : " We’ll try again on the next hourly check."}
+              : " We’ll try again on the next daily check."}
           </p>
         ) : null}
         {sendState && !sendState.ok ? (

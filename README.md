@@ -44,7 +44,7 @@ Two queues: people whose follow-up date is due, and open invoices past their due
 
 **Send email** asks you to confirm, then sends through [Resend](https://resend.com) to the lead/client address. Subjects are **Quick check-in** (follow-ups) and **Invoice reminder** (invoices); the body is the draft you edited. The nudge is marked `sent` (with `sentAt`) **only if Resend accepts the mail**. If it fails — missing keys, bad from-address, Resend error — the draft stays a draft and the peach error on the card tells you why.
 
-**Send later** (on the same card): pick a future date/time, or a shortcut like **In 3 days**, then **Save draft**. Status stays `draft` until the mail goes out. An hourly Vercel Cron job (`/api/cron/send-due-nudges`) sends due drafts through the same Resend path as **Send email**. Unscheduled drafts are not auto-sent.
+**Send later** (on the same card): pick a future date/time, or a shortcut like **In 3 days**, then **Save draft**. Status stays `draft` until the mail goes out. A daily Vercel Cron job (`/api/cron/send-due-nudges`, 15:00 UTC) sends due drafts through the same Resend path as **Send email**. Unscheduled drafts are not auto-sent.
 
 Until a Google Sheet is connected, the default store is in-memory and **starts empty** — add a person or an invoice from `/app`. The CSVs in [`data/`](data/) are header rows only (a Sheets copy can be empty headers too). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy. **Production auto-sends need Sheets** (`STACKLESS_DATA_STORE=sheets`) so a scheduled draft is still there when cron runs.
 
@@ -65,19 +65,19 @@ The send path is server-only (`sendNudgeAction` in `app/app/actions.ts` and `del
 
 ### Vercel Cron (required to send later)
 
-The site still **builds** without `CRON_SECRET`. The hourly job will not send until this is set, and random hits to `/api/cron/send-due-nudges` get **401**.
+The site still **builds** without `CRON_SECRET`. The daily job will not send until this is set, and random hits to `/api/cron/send-due-nudges` get **401**.
 
 1. Generate a long random secret, e.g. `openssl rand -hex 32`.
 2. Vercel → **Settings** → **Environment Variables** → add `CRON_SECRET` for **Production** (Preview does not run Vercel Cron). Never `NEXT_PUBLIC_`.
 3. Confirm **Resend** env is already set: `RESEND_API_KEY` and `RESEND_FROM_EMAIL` (same as Send email). From `hello@stackless.lol` is already working.
-4. Confirm **Cron Jobs** are enabled on the Vercel plan. Hourly (`0 * * * *` in `vercel.json`) needs **Pro** — Hobby only allows once per day, and an hourly expression **fails the deploy**. If the project is on Hobby, either upgrade or change the schedule to daily (e.g. `0 14 * * *`) until you upgrade.
+4. Confirm **Cron Jobs** are enabled on the Vercel plan. **Hobby = daily** (`0 15 * * *` in `vercel.json` — 15:00 UTC ≈ 8am PT). An hourly expression **fails the Hobby deploy**. **Pro** can bump `vercel.json` to hourly later.
 5. For Production persistence, set `STACKLESS_DATA_STORE=sheets` with the Google vars below. Memory store on Vercel is per-instance and will not keep drafts for cron.
 6. **Redeploy** so `vercel.json` crons register. Cron runs on **production** only.
 7. Optional check: Vercel → project → **Cron Jobs** should list `/api/cron/send-due-nudges`.
 
 **Failure handling:** a failed auto-send stays `draft`. The row records `last_error` and increments `send_attempts`. After **5** failures, cron skips that draft (no endless retries). Saving the draft again clears the counter. Resend’s idempotency key `nudge/<id>` also prevents a true double-send if a previous attempt was actually accepted. Already-`sent` nudges are never selected.
 
-If the Sheet is missing `last_error` / `send_attempts` columns, the app still loads; retries just won’t persist the counter (hourly retry continues; Resend idempotency still applies). Add those two columns on `nudge_log` when you can.
+If the Sheet is missing `last_error` / `send_attempts` columns, the app still loads; retries just won’t persist the counter (the next daily run still tries; Resend idempotency still applies). Add those two columns on `nudge_log` when you can.
 
 ### Google Sheets (optional)
 
