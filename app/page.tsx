@@ -30,7 +30,7 @@ export default function Home() {
           </p>
           <EarlyAccessButton className={btnClass} id="go" />
           <p className="mt-[0.8rem] text-[0.95rem] text-muted">
-            <strong>Start at $99/month.</strong> Cancel anytime.
+            <strong>Start at $19/month.</strong> Cancel anytime.
           </p>
         </div>
         <aside
@@ -110,7 +110,7 @@ export default function Home() {
         <h2 className="mb-[0.4rem] text-[1.5rem] font-bold tracking-[-0.02em]">
           Keep your pipeline warm
         </h2>
-        <p className="mb-4 text-muted">Start at $99/month. Cancel anytime.</p>
+        <p className="mb-4 text-muted">Start at $19/month. Cancel anytime.</p>
         <EarlyAccessButton className={btnClass} />
       </section>
 
