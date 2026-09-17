@@ -1,8 +1,14 @@
-# Stackless sheet tabs (Google Sheets)
+# Stackless data (Neon + optional Sheets)
+
+**Production:** Neon Postgres. Create a free project, set `DATABASE_URL` and `STACKLESS_DATA_STORE=neon`. Schema: [`schema.sql`](schema.sql) (the app also bootstraps `CREATE TABLE IF NOT EXISTS`). Steps: [README.md](../README.md) → Neon Postgres.
+
+Default `STACKLESS_DATA_STORE=memory` starts with no records and needs no database. Sheets below is **legacy / optional** — not the recommended production path.
+
+## Google Sheets tabs (legacy)
 
 Three tabs. Copy these CSVs into one Google Sheet (one tab per file). They are **header rows only** — the app starts empty until you add people, invoices, and nudges.
 
-The app does **not** need a Sheet to run. Default `STACKLESS_DATA_STORE=memory` starts with no records. Set `STACKLESS_DATA_STORE=sheets` only after the service account can edit the Sheet.
+The app does **not** need a Sheet to run. Set `STACKLESS_DATA_STORE=sheets` only after the service account can edit the Sheet.
 
 ## How to make the Sheet
 
@@ -29,10 +35,10 @@ Credentials stay on the server (`GOOGLE_*` in `.env.local` / Vercel). Never use 
     - `private_key` → `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (keep the `-----BEGIN PRIVATE KEY-----` block; if you paste it as one line, keep the `\n` characters)
 6. Spreadsheet id from the URL `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit` → `GOOGLE_SHEETS_SPREADSHEET_ID`
 7. In Google Sheets: **Share** → paste the service account email → role **Editor** → uncheck notify → **Share**
-8. Set `STACKLESS_DATA_STORE=sheets` in `.env.local` (and Vercel if you want Production/Preview on Sheets)
+8. Set `STACKLESS_DATA_STORE=sheets` in `.env.local` (only if you are using Sheets instead of Neon)
 9. Restart the app. If sheets mode is on but a value is missing, `/app` shows a peach error instead of a stack trace.
 
-Leave `STACKLESS_DATA_STORE=memory` if you have not done this yet.
+Leave `STACKLESS_DATA_STORE=memory` if you have not connected Neon or Sheets yet. Prefer Neon for Production.
 
 ## Tabs (simple)
 
@@ -80,4 +86,4 @@ Leave `STACKLESS_DATA_STORE=memory` if you have not done this yet.
 
 ## Thin adapter
 
-App code only calls `DataStore` functions in `lib/data/types.ts` — never Google Sheets column letters. `MemoryDataStore` and `SheetsDataStore` both implement the same create/update/delete methods for leads and invoices, and both persist `scheduledFor` on nudge create **and** update. Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. When you leave Sheets for a real database, swap the guts of those functions, not the whole app.
+App code only calls `DataStore` functions in `lib/data/types.ts` — never SQL or Google Sheets column letters. `MemoryDataStore`, `NeonDataStore`, and `SheetsDataStore` all implement the same create/update/delete methods for leads and invoices, and persist `scheduledFor` on nudge create **and** update (plus `last_error` / `send_attempts` on failed auto-sends). Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. Neon is the production store; swapping stores does not change `/app`.

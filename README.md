@@ -34,7 +34,8 @@ Open [http://localhost:3000](http://localhost:3000).
 - `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
 - `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can add people and invoices. With keys, signed-out visits go to the peach `/sign-in` page (not Clerk’s hosted Account Portal), then back to `/app`. Signed in without an active Stripe subscription, `/app` shows a peach **paywall** (Subscribe — $19/month), not a crash. Unsigned `/account` visits go to the same peach Sign In, then back to `/account`.
 
-`npm run build` works **without** Clerk, Stripe, Resend, or Google keys. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the Clerk keys. Checkout is disabled until Stripe keys + `STRIPE_PRICE_ID` are set. Vercel preview/production **do** need Clerk (and Stripe for payments), then a **Redeploy**.
+`npm run build` works **without** Clerk, Stripe, Resend, Google, or `DATABASE_URL`. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the Clerk keys. Checkout is disabled until Stripe keys + `STRIPE_PRICE_ID` are set. Vercel preview/production **do** need Clerk (and Stripe for payments), then a **Redeploy**.
+
 
 ## Today’s List (`/app`)
 
@@ -46,7 +47,8 @@ Two queues used to fight each other. **Due today** is now one list: people whose
 
 **Schedule** (on the same card): pick a future date/time, or a shortcut like **In 3 days**, then **Save for later**. Status stays `draft` until the mail goes out. A daily Vercel Cron job (`/api/cron/send-due-nudges`, 15:00 UTC) sends due drafts through the same Resend path as **Send**. Unscheduled drafts are not auto-sent.
 
-Until a Google Sheet is connected, the default store is in-memory and **starts empty** — add a person or an invoice from `/app`. The CSVs in [`data/`](data/) are header rows only (a Sheets copy can be empty headers too). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy. **Production auto-sends need Sheets** (`STACKLESS_DATA_STORE=sheets`) so a scheduled draft is still there when cron runs.
+The default store is in-memory and **starts empty** — add a person or an invoice from `/app`. Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy. **Production auto-sends need Neon Postgres** (`STACKLESS_DATA_STORE=neon` + `DATABASE_URL`) so a scheduled draft is still there when cron runs. Google Sheets is a legacy option, not the recommended path.
+
 
 ### Stripe ($19/month — required for the live workspace)
 
@@ -122,19 +124,59 @@ The site still **builds** without `CRON_SECRET`. The daily job will not send unt
 2. Vercel → **Settings** → **Environment Variables** → add `CRON_SECRET` for **Production** (Preview does not run Vercel Cron). Never `NEXT_PUBLIC_`.
 3. Confirm **Resend** env is already set: `RESEND_API_KEY` and `RESEND_FROM_EMAIL` (same as Send email). From `hello@stackless.lol` is already working.
 4. Confirm **Cron Jobs** are enabled on the Vercel plan. **Hobby = daily** (`0 15 * * *` in `vercel.json` — 15:00 UTC ≈ 8am PT). An hourly expression **fails the Hobby deploy**. **Pro** can bump `vercel.json` to hourly later.
-5. For Production persistence, set `STACKLESS_DATA_STORE=sheets` with the Google vars below. Memory store on Vercel is per-instance and will not keep drafts for cron.
+5. For Production persistence, set `STACKLESS_DATA_STORE=neon` and `DATABASE_URL` (steps below). Memory store on Vercel is per-instance and will not keep drafts for cron. Sheets still works if you already have it; Neon is the recommended path.
 6. **Redeploy** so `vercel.json` crons register. Cron runs on **production** only.
 7. Optional check: Vercel → project → **Cron Jobs** should list `/api/cron/send-due-nudges`.
 
 **Failure handling:** a failed auto-send stays `draft`. The row records `last_error` and increments `send_attempts`. After **5** failures, cron skips that draft (no endless retries). Saving the draft again clears the counter. Resend’s idempotency key `nudge/<id>` also prevents a true double-send if a previous attempt was actually accepted. Already-`sent` nudges are never selected.
 
-If the Sheet is missing `last_error` / `send_attempts` columns, the app still loads; retries just won’t persist the counter (the next daily run still tries; Resend idempotency still applies). Add those two columns on `nudge_log` when you can.
+Neon’s `nudge_log` table includes `last_error` and `send_attempts` (see [`data/schema.sql`](data/schema.sql)). If you are still on Sheets and those columns are missing, the app still loads; retries just won’t persist the counter (the next daily run still tries; Resend idempotency still applies).
 
-### Google Sheets (optional)
+### Neon Postgres (recommended for Production)
 
-Leave `STACKLESS_DATA_STORE=memory` until a Sheet is connected. Preview and Production work without Google. Setting `STACKLESS_DATA_STORE=sheets` without credentials shows a clear error on `/app` (no sample keys).
+Leave `STACKLESS_DATA_STORE=memory` for local and CI until a database is connected. The site **builds** without `DATABASE_URL`. Setting `STACKLESS_DATA_STORE=neon` (or `postgres`) without `DATABASE_URL` shows a peach error on `/app` (no sample keys).
 
-When you want a real Sheet:
+App code still talks only to `DataStore` in `lib/data/types.ts`. `NeonDataStore` is the production implementation (`lib/data/neon-store.ts`), using `@neondatabase/serverless` over HTTP — Vercel-friendly, no Google Cloud.
+
+#### 1. Create a free Neon project (Michael)
+
+1. Open [https://console.neon.tech](https://console.neon.tech) and sign in (GitHub is fine).
+2. **New project**. Name it `Stackless`. Pick a region close to Vercel (e.g. US East). Create.
+3. On the project dashboard, open **Connect** (connection details).
+4. Copy the connection string. Prefer **Pooled connection** for serverless. It looks like `postgresql://…@ep-….neon.tech/neondb?sslmode=require` — the pooled host usually includes `-pooler`.
+5. Optional: **SQL Editor** → paste [`data/schema.sql`](data/schema.sql) → Run. The app also runs `CREATE TABLE IF NOT EXISTS` on first request, so this step is a backup, not required.
+
+Do not commit the connection string.
+
+#### 2. Local `.env.local`
+
+```bash
+STACKLESS_DATA_STORE=neon
+DATABASE_URL=postgresql://…
+```
+
+`DATABASE_URL` is **server-only** — never prefix with `NEXT_PUBLIC_`. Restart `npm run dev`. `/app` should load an empty list (add a person or invoice). To go back to in-memory, set `STACKLESS_DATA_STORE=memory` again.
+
+#### 3. Vercel env (after merge)
+
+Preview/production stay on the in-memory store (lost between instances, cron cannot see scheduled drafts) until this is done, then **Redeploy**.
+
+1. Open the Stackless project on [Vercel](https://vercel.com).
+2. **Settings** → **Environment Variables**. Add both, for **Production**, **Preview**, and **Development**:
+   - `DATABASE_URL` — the Neon connection string from step 1
+   - `STACKLESS_DATA_STORE` = `neon`
+3. Never prefix `DATABASE_URL` with `NEXT_PUBLIC_`.
+4. **Deployments** → latest → **⋯** → **Redeploy**.
+
+Clerk, Stripe, Resend, and cron env vars stay as they are. After redeploy, add/edit/delete, nudges, Send, Schedule, and the daily cron job use Neon.
+
+### Google Sheets (legacy, optional)
+
+Sheets still implements the same `DataStore` interface, but it is **not** the recommended production path. Prefer Neon above. You do **not** need Google Cloud for Stackless.
+
+Leave `STACKLESS_DATA_STORE=memory` (or `neon`) unless you already have a Sheet. Setting `STACKLESS_DATA_STORE=sheets` without credentials shows a clear error on `/app` (no sample keys).
+
+When you want a Sheet anyway:
 
 1. Copy `data/leads.csv`, `data/invoices.csv`, and `data/nudge_log.csv` into one Google Sheet (tabs **leads**, **invoices**, **nudge_log**). Those files are header rows only — a Sheets copy can start empty too. Full steps: [`data/README.md`](data/README.md).
 2. In [Google Cloud Console](https://console.cloud.google.com/), create a project (or pick one) → **APIs & Services** → enable **Google Sheets API**.
