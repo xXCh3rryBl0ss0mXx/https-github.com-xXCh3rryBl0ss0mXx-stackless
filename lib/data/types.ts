@@ -1,4 +1,4 @@
-/** Thin data-layer — app code talks to DataStore, not Sheets columns. */
+/** Thin data-layer — app code talks to DataStore, not SQL or Sheets columns. */
 
 export type LeadStatus =
   | "new"
