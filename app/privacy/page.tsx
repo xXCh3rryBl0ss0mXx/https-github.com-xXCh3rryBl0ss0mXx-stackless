@@ -76,6 +76,7 @@ export default function PrivacyPage() {
           <li>Resend — outbound email</li>
           <li>Neon — Postgres, the production store</li>
           <li>Vercel — hosting</li>
+          <li>Grok Bot — helps build and run Stackless</li>
         </ul>
       </LegalSection>
 
