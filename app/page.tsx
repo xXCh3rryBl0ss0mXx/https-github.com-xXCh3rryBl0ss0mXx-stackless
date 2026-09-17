@@ -3,6 +3,9 @@ import { EarlyAccessButton, LandingHeaderCta } from "@/components/landing-auth";
 const chipClass =
   "cursor-pointer whitespace-nowrap rounded-full border border-line bg-white px-4 py-2 font-[inherit] text-[0.9rem] font-semibold text-muted no-underline";
 
+const headerSignUpClass =
+  "cursor-pointer whitespace-nowrap rounded-full border-0 bg-linear-to-br from-peach to-btn-end px-4 py-2 font-[inherit] text-[0.9rem] font-extrabold text-btn-ink no-underline shadow-[0_8px_20px_rgba(255,143,102,0.35)]";
+
 const btnClass =
   "inline-block cursor-pointer rounded-full border-0 bg-linear-to-br from-peach to-btn-end px-[1.35rem] py-[0.9rem] font-[inherit] font-extrabold text-btn-ink no-underline shadow-[0_8px_20px_rgba(255,143,102,0.35)]";
 
@@ -13,7 +16,7 @@ export default function Home() {
         <div className="text-[1.3rem] font-extrabold">
           Stack<span className="text-logo-accent">less</span>
         </div>
-        <LandingHeaderCta className={chipClass} />
+        <LandingHeaderCta className={chipClass} signUpClassName={headerSignUpClass} />
       </header>
 
       <section className="grid gap-7 rounded-[28px] border border-line bg-card px-6 py-8 shadow-[0_18px_40px_rgba(80,50,20,0.06)] min-[820px]:grid-cols-[1.1fr_0.9fr] min-[820px]:items-center min-[820px]:p-10">
