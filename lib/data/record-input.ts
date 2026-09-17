@@ -41,7 +41,8 @@ function requireEmail(value: string, label: string): string {
 export function leadWriteFromForm(formData: FormData): LeadWrite {
   const name = read(formData, "name");
   const email = requireEmail(read(formData, "email"), "Email");
-  const status = read(formData, "status") as LeadStatus;
+  const statusRaw = read(formData, "status");
+  const status = (statusRaw || "new") as LeadStatus;
   if (!name) throw new Error("Name is required.");
   if (!LEAD_STATUSES.includes(status)) throw new Error("Pick a lead status.");
   return {
@@ -60,7 +61,8 @@ export function invoiceWriteFromForm(formData: FormData): InvoiceWrite {
   const clientEmail = requireEmail(read(formData, "clientEmail"), "Client email");
   const invoiceNumber = read(formData, "invoiceNumber");
   const amountRaw = read(formData, "amountUsd");
-  const status = read(formData, "status") as InvoiceStatus;
+  const statusRaw = read(formData, "status");
+  const status = (statusRaw || "open") as InvoiceStatus;
   const dueDate = read(formData, "dueDate");
   if (!clientName) throw new Error("Client name is required.");
   if (!invoiceNumber) throw new Error("Invoice number is required.");

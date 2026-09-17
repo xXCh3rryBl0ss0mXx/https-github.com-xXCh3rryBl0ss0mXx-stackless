@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { NudgeBoard } from "@/components/nudge-board";
 import { PastDueBanner, Paywall } from "@/components/paywall";
-import { AddRecords, AllRecords } from "@/components/records-board";
 import { getDataStore } from "@/lib/data/store";
 import type { Invoice, Lead, Nudge } from "@/lib/data/types";
 import { requireSignedIn } from "@/lib/require-signed-in";
@@ -88,15 +87,14 @@ export default async function AppPage({
           Today’s List
         </div>
         <h1 className="mb-2 text-[clamp(1.7rem,4vw,2.2rem)] leading-[1.15] font-bold tracking-[-0.03em]">
-          Who needs a nudge
+          Due today
         </h1>
         <p className="max-w-[40rem] text-muted">
-          Add people and invoices, then write the note. Send it now, or pick a time and save the
-          draft — we’ll still send it when it’s due if you’re offline.
+          Add a person or an invoice, then send, schedule, or skip. We’ll still send a saved note
+          when it’s due if you’re offline.
         </p>
       </div>
       {billing.subscriptionStatus === "past_due" ? <PastDueBanner /> : null}
-      <AddRecords today={today} />
       <NudgeBoard
         leads={dueLeads}
         invoices={overdueInvoices}
@@ -104,7 +102,6 @@ export default async function AppPage({
         allInvoices={invoices}
         nudges={nudges}
         today={today}
-        records={<AllRecords leads={leads} invoices={invoices} today={today} />}
       />
     </main>
   );

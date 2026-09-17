@@ -2,8 +2,6 @@
 
 import { useActionState, useState } from "react";
 import {
-  createInvoiceAction,
-  createLeadAction,
   deleteInvoiceAction,
   deleteLeadAction,
   updateInvoiceAction,
@@ -11,8 +9,8 @@ import {
   type RecordActionState,
 } from "@/app/app/actions";
 import { formatUsd } from "@/lib/data/draft-text";
-import { invoiceStatusLabel, leadStatusLabel } from "@/lib/data/labels";
-import { INVOICE_STATUSES, LEAD_STATUSES } from "@/lib/data/record-input";
+import { invoiceStatusLabel } from "@/lib/data/labels";
+import { INVOICE_STATUSES } from "@/lib/data/record-input";
 import type { Invoice, Lead } from "@/lib/data/types";
 
 const primaryBtn =
@@ -21,11 +19,11 @@ const primaryBtn =
 const quietBtn =
   "cursor-pointer rounded-full border border-line bg-white px-4 py-2 font-[inherit] text-[0.9rem] font-semibold text-muted disabled:cursor-not-allowed disabled:opacity-60";
 
-const mintBtn =
-  "cursor-pointer rounded-full border-0 bg-mint px-4 py-2 font-[inherit] text-[0.9rem] font-extrabold text-[#145c3d] disabled:cursor-not-allowed disabled:opacity-60";
-
 const peachBtn =
   "cursor-pointer rounded-full border border-peach bg-badge-bg px-4 py-2 font-[inherit] text-[0.9rem] font-extrabold text-badge-fg disabled:cursor-not-allowed disabled:opacity-60";
+
+const ghostBtn =
+  "cursor-pointer rounded-full border-0 bg-transparent px-3 py-1.5 font-[inherit] text-[0.85rem] font-semibold text-muted disabled:cursor-not-allowed disabled:opacity-60";
 
 const fieldClass =
   "w-full rounded-[16px] border border-line bg-white px-3 py-2 font-[inherit] text-[0.95rem] text-bubble outline-none focus:border-peach";
@@ -137,12 +135,43 @@ function EditActions({
   );
 }
 
-function LeadFields({ lead, today }: { lead?: Lead; today: string }) {
+function LeadFields({ lead }: { lead?: Lead }) {
+  if (!lead) {
+    return (
+      <div className="grid gap-3">
+        <Field label="Name">
+          <input
+            className={fieldClass}
+            name="name"
+            required
+            autoComplete="name"
+            placeholder="Sam Lee"
+          />
+        </Field>
+        <Field label="Email">
+          <input
+            className={fieldClass}
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="sam@studio.com"
+          />
+        </Field>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-3 min-[640px]:grid-cols-2">
-      {lead ? <input type="hidden" name="id" value={lead.id} /> : null}
+      <input type="hidden" name="id" value={lead.id} />
+      <input type="hidden" name="status" value={lead.status} />
+      {lead.company ? <input type="hidden" name="company" value={lead.company} /> : null}
+      {lead.lastContactAt ? (
+        <input type="hidden" name="lastContactAt" value={lead.lastContactAt} />
+      ) : null}
       <Field label="Name">
-        <input className={fieldClass} name="name" required defaultValue={lead?.name ?? ""} />
+        <input className={fieldClass} name="name" required defaultValue={lead.name} />
       </Field>
       <Field label="Email">
         <input
@@ -150,35 +179,15 @@ function LeadFields({ lead, today }: { lead?: Lead; today: string }) {
           name="email"
           type="email"
           required
-          defaultValue={lead?.email ?? ""}
+          defaultValue={lead.email}
         />
-      </Field>
-      <Field label="Company">
-        <input className={fieldClass} name="company" defaultValue={lead?.company ?? ""} />
-      </Field>
-      <Field label="Status">
-        <select className={fieldClass} name="status" defaultValue={lead?.status ?? "new"}>
-          {LEAD_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {leadStatusLabel(status)}
-            </option>
-          ))}
-        </select>
       </Field>
       <Field label="Follow up on">
         <input
           className={fieldClass}
           name="nextFollowUpAt"
           type="date"
-          defaultValue={lead?.nextFollowUpAt ?? today}
-        />
-      </Field>
-      <Field label="Last contact">
-        <input
-          className={fieldClass}
-          name="lastContactAt"
-          type="date"
-          defaultValue={lead?.lastContactAt ?? ""}
+          defaultValue={lead.nextFollowUpAt ?? ""}
         />
       </Field>
       <Field className="min-[640px]:col-span-2" label="Notes">
@@ -186,7 +195,7 @@ function LeadFields({ lead, today }: { lead?: Lead; today: string }) {
           className={`${fieldClass} min-h-[4.5rem] resize-y`}
           name="notes"
           rows={3}
-          defaultValue={lead?.notes ?? ""}
+          defaultValue={lead.notes ?? ""}
         />
       </Field>
     </div>
@@ -194,6 +203,7 @@ function LeadFields({ lead, today }: { lead?: Lead; today: string }) {
 }
 
 function InvoiceFields({ invoice, today }: { invoice?: Invoice; today: string }) {
+  const isEdit = Boolean(invoice);
   return (
     <div className="grid gap-3 min-[640px]:grid-cols-2">
       {invoice ? <input type="hidden" name="id" value={invoice.id} /> : null}
@@ -202,15 +212,19 @@ function InvoiceFields({ invoice, today }: { invoice?: Invoice; today: string })
           className={fieldClass}
           name="clientName"
           required
+          autoComplete="name"
+          placeholder="Sam Lee"
           defaultValue={invoice?.clientName ?? ""}
         />
       </Field>
-      <Field label="Client email">
+      <Field label="Email">
         <input
           className={fieldClass}
           name="clientEmail"
           type="email"
           required
+          autoComplete="email"
+          placeholder="sam@studio.com"
           defaultValue={invoice?.clientEmail ?? ""}
         />
       </Field>
@@ -219,6 +233,7 @@ function InvoiceFields({ invoice, today }: { invoice?: Invoice; today: string })
           className={fieldClass}
           name="invoiceNumber"
           required
+          placeholder="1042"
           defaultValue={invoice?.invoiceNumber ?? ""}
         />
       </Field>
@@ -230,17 +245,9 @@ function InvoiceFields({ invoice, today }: { invoice?: Invoice; today: string })
           min="0"
           step="0.01"
           required
+          placeholder="850"
           defaultValue={invoice ? String(invoice.amountUsd) : ""}
         />
-      </Field>
-      <Field label="Status">
-        <select className={fieldClass} name="status" defaultValue={invoice?.status ?? "open"}>
-          {INVOICE_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {invoiceStatusLabel(status)}
-            </option>
-          ))}
-        </select>
       </Field>
       <Field label="Due date">
         <input
@@ -251,22 +258,34 @@ function InvoiceFields({ invoice, today }: { invoice?: Invoice; today: string })
           defaultValue={invoice?.dueDate ?? today}
         />
       </Field>
-      <Field className="min-[640px]:col-span-2" label="Payment link">
-        <input
-          className={fieldClass}
-          name="paymentLink"
-          type="text"
-          placeholder="https://"
-          defaultValue={invoice?.paymentLink ?? ""}
-        />
-      </Field>
+      {isEdit ? (
+        <>
+          <Field label="Status">
+            <select className={fieldClass} name="status" defaultValue={invoice?.status ?? "open"}>
+              {INVOICE_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {invoiceStatusLabel(status)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field className="min-[640px]:col-span-2" label="Payment link">
+            <input
+              className={fieldClass}
+              name="paymentLink"
+              type="text"
+              placeholder="https://"
+              defaultValue={invoice?.paymentLink ?? ""}
+            />
+          </Field>
+        </>
+      ) : null}
     </div>
   );
 }
 
 export function LeadForm({
   lead,
-  today,
   submitLabel,
   action,
 }: {
@@ -283,14 +302,14 @@ export function LeadForm({
         role="status"
         className="rounded-[16px] border border-line bg-follow-bg px-3 py-2 text-[0.9rem] font-semibold text-follow-fg"
       >
-        Saved. If the follow-up is today or earlier, they’re on Today’s List.
+        Saved. They’re on Due today.
       </p>
     );
   }
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
-      <LeadFields lead={lead} today={today} />
+      <LeadFields lead={lead} />
       <ActionError state={state} />
       {state?.ok ? (
         <p role="status" className="text-[0.9rem] font-semibold text-follow-fg">
@@ -332,7 +351,7 @@ export function InvoiceForm({
         role="status"
         className="rounded-[16px] border border-line bg-follow-bg px-3 py-2 text-[0.9rem] font-semibold text-follow-fg"
       >
-        Saved. Open invoices due today or earlier show up in the overdue queue.
+        Saved. Open invoices due today or earlier show up in Due today.
       </p>
     );
   }
@@ -362,59 +381,11 @@ export function InvoiceForm({
   );
 }
 
-export function AddLeadCard({ today }: { today: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <article className="rounded-[20px] border border-line bg-card p-[1.15rem]">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-[1.05rem] font-bold">Add a person</h3>
-          <p className="text-[0.92rem] text-muted">
-            Follow-up date today (or earlier) puts them on Today’s List.
-          </p>
-        </div>
-        <button className={open ? quietBtn : mintBtn} type="button" onClick={() => setOpen(!open)}>
-          {open ? "Close" : "Add"}
-        </button>
-      </div>
-      {open ? (
-        <div className="mt-4">
-          <LeadForm today={today} submitLabel="Save person" action={createLeadAction} />
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-export function AddInvoiceCard({ today }: { today: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <article className="rounded-[20px] border border-line bg-card p-[1.15rem]">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-[1.05rem] font-bold">Add an invoice</h3>
-          <p className="text-[0.92rem] text-muted">
-            Open + due today (or earlier) lands on the overdue queue.
-          </p>
-        </div>
-        <button className={open ? quietBtn : mintBtn} type="button" onClick={() => setOpen(!open)}>
-          {open ? "Close" : "Add"}
-        </button>
-      </div>
-      {open ? (
-        <div className="mt-4">
-          <InvoiceForm today={today} submitLabel="Save invoice" action={createInvoiceAction} />
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
 export function LeadEditor({ lead, today }: { lead: Lead; today: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-3">
-      <button className={quietBtn} type="button" onClick={() => setOpen(!open)}>
+    <div>
+      <button className={ghostBtn} type="button" onClick={() => setOpen(!open)}>
         {open ? "Close" : "Edit"}
       </button>
       {open ? (
@@ -434,8 +405,8 @@ export function LeadEditor({ lead, today }: { lead: Lead; today: string }) {
 export function InvoiceEditor({ invoice, today }: { invoice: Invoice; today: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-3">
-      <button className={quietBtn} type="button" onClick={() => setOpen(!open)}>
+    <div>
+      <button className={ghostBtn} type="button" onClick={() => setOpen(!open)}>
         {open ? "Close" : "Edit"}
       </button>
       {open ? (
@@ -455,23 +426,17 @@ export function InvoiceEditor({ invoice, today }: { invoice: Invoice; today: str
 export function LeadRecordCard({ lead, today }: { lead: Lead; today: string }) {
   return (
     <article className="rounded-[20px] border border-line bg-card p-[1.15rem]">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-[1.05rem] font-bold">{lead.name}</h3>
-          <p className="text-[0.92rem] text-muted">
-            {lead.email}
-            {lead.company ? ` · ${lead.company}` : ""}
-          </p>
-          <p className="mt-1 text-[0.9rem] text-muted">
-            {lead.nextFollowUpAt ? `Follow up ${lead.nextFollowUpAt}` : "No follow-up date yet"}
-            {lead.notes ? ` · ${lead.notes}` : ""}
-          </p>
-        </div>
-        <span className="inline-block rounded-full bg-follow-bg px-[0.55rem] py-[0.15rem] text-[0.72rem] font-extrabold text-follow-fg">
-          {leadStatusLabel(lead.status)}
-        </span>
+      <div>
+        <h3 className="text-[1.05rem] font-bold">{lead.name}</h3>
+        <p className="text-[0.92rem] text-muted">{lead.email}</p>
+        <p className="mt-1 text-[0.9rem] text-muted">
+          {lead.nextFollowUpAt ? `Follow up ${lead.nextFollowUpAt}` : "No follow-up date yet"}
+          {lead.notes ? ` · ${lead.notes}` : ""}
+        </p>
       </div>
-      <LeadEditor lead={lead} today={today} />
+      <div className="mt-2">
+        <LeadEditor lead={lead} today={today} />
+      </div>
     </article>
   );
 }
@@ -500,7 +465,9 @@ export function InvoiceRecordCard({ invoice, today }: { invoice: Invoice; today:
           {invoiceStatusLabel(invoice.status)}
         </span>
       </div>
-      <InvoiceEditor invoice={invoice} today={today} />
+      <div className="mt-2">
+        <InvoiceEditor invoice={invoice} today={today} />
+      </div>
     </article>
   );
 }
