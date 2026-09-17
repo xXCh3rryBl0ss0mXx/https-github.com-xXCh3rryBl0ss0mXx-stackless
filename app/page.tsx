@@ -1,4 +1,5 @@
 import { EarlyAccessButton, LandingHeaderCta } from "@/components/landing-auth";
+import { SiteFooter } from "@/components/site-footer";
 
 const chipClass =
   "cursor-pointer whitespace-nowrap rounded-full border border-line bg-white px-4 py-2 font-[inherit] text-[0.9rem] font-semibold text-muted no-underline";
@@ -117,9 +118,7 @@ export default function Home() {
         <EarlyAccessButton className={btnClass} />
       </section>
 
-      <footer className="mt-8 text-center text-[0.85rem] text-muted">
-        Stackless · main landing
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
