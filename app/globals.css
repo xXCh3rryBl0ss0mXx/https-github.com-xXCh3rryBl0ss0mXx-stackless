@@ -109,6 +109,52 @@ body {
 .cl-logoBox,
 .cl-logoImage,
 a[href*="clerk.com"][target="_blank"],
-.cl-footer .cl-internal-1dauvpw {
+.cl-footer .cl-internal-1dauvpw,
+[data-clerk-dev-mode-overlay],
+[data-clerk-dev-mode-notice] {
+  display: none !important;
+}
+
+/*
+ * UserButton menu: Clerk’s popover footer uses colorBackground (cream) and a
+ * smaller radius than the card, so the landing peach bleeds through as a
+ * curved seam. Keep the whole menu one solid white card.
+ */
+.cl-userButtonPopoverCard,
+.cl-userButtonPopoverCard.cl-cardBox,
+.cl-userButtonPopoverMain,
+.cl-userButtonPopoverCard .cl-card,
+.cl-userButtonPopoverCard .cl-main,
+.cl-userButtonPopoverFooter,
+.cl-userButtonPopoverCard .cl-footer,
+.cl-popoverBox {
+  --clerk-color-background: #ffffff;
+  --cl-color-background: #ffffff;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+.cl-userButtonPopoverCard,
+.cl-userButtonPopoverCard.cl-cardBox,
+.cl-popoverBox {
+  overflow: hidden !important;
+}
+
+.cl-userButtonPopoverMain,
+.cl-userButtonPopoverCard > .cl-card,
+.cl-userButtonPopoverCard .cl-main {
+  border-radius: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.cl-userButtonPopoverFooter,
+.cl-userButtonPopoverCard > .cl-footer {
+  display: none !important;
+}
+
+.cl-userButtonPopoverCard > svg,
+.cl-userButtonPopoverFooter svg {
   display: none !important;
 }
