@@ -267,6 +267,21 @@ describe("record form parsing", () => {
     assert.throws(() => leadWriteFromForm(bad), /email/i);
   });
 
+  it("defaults a person to status new and omits company when those fields are absent", () => {
+    const form = new FormData();
+    form.set("name", "Ava");
+    form.set("email", "ava@example.com");
+    assert.deepEqual(leadWriteFromForm(form), {
+      name: "Ava",
+      email: "ava@example.com",
+      company: undefined,
+      status: "new",
+      lastContactAt: undefined,
+      nextFollowUpAt: undefined,
+      notes: undefined,
+    });
+  });
+
   it("reads an invoice form and rejects a bad amount", () => {
     const form = new FormData();
     form.set("clientName", "Riley");
@@ -276,6 +291,14 @@ describe("record form parsing", () => {
     form.set("status", "open");
     form.set("dueDate", "2026-09-16");
     assert.equal(invoiceWriteFromForm(form).amountUsd, 400);
+
+    const minimal = new FormData();
+    minimal.set("clientName", "Riley");
+    minimal.set("clientEmail", "riley@example.com");
+    minimal.set("invoiceNumber", "1044");
+    minimal.set("amountUsd", "400");
+    minimal.set("dueDate", "2026-09-16");
+    assert.equal(invoiceWriteFromForm(minimal).status, "open");
 
     const bad = new FormData();
     bad.set("clientName", "Riley");

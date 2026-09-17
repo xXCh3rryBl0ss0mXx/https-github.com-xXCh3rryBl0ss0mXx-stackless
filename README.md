@@ -38,13 +38,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Today’s List (`/app`)
 
-Two queues: people whose follow-up date is due, and open invoices past their due date. Each row has an editable draft. **Save draft**, **Send email**, and **Skip** all go through `DataStore` (`lib/data/types.ts`).
+Two queues used to fight each other. **Due today** is now one list: people whose follow-up date is due, and open invoices past their due date. Each row has a short note. **Send**, **Schedule**, and **Skip** are the primary actions (all go through `DataStore` in `lib/data/types.ts`). **Edit** is secondary. **Save note** keeps a draft without sending.
 
-**Add a person** / **Add an invoice** sit above the queues. After you save, anyone with a follow-up date of today (or earlier) and any **open** invoice due today (or earlier) shows up so you can draft and send a nudge. **Your people** and **Your invoices** list everything for edit (status, dates, notes). Edit forms have **Save changes** and **Delete** on the same row. Delete asks you to confirm (same in-card peach confirm as Send email), then removes that person or invoice. Draft nudges for them go too; sent and skipped notes stay in Recent nudges.
+**Add** is one control — pick Person or Invoice. A person is just **name + email** (status defaults to `new` behind the scenes; no company field). An invoice is **client name, email, amount, due date, and invoice number** (status defaults to `open`). After you save, anyone with no follow-up date (or a date of today or earlier) and any **open** invoice due today or earlier lands on Due today. **Everyone else** is a quiet list for records that aren’t due. Edit forms have **Save changes** and **Delete** on the same row. Delete asks you to confirm (same in-card peach confirm as Send), then removes that person or invoice. Draft nudges for them go too; sent and skipped notes stay in quiet **Recent**.
 
-**Send email** asks you to confirm, then sends through [Resend](https://resend.com) to the lead/client address. Subjects are **Quick check-in** (follow-ups) and **Invoice reminder** (invoices); the body is the draft you edited. The nudge is marked `sent` (with `sentAt`) **only if Resend accepts the mail**. If it fails — missing keys, bad from-address, Resend error — the draft stays a draft and the peach error on the card tells you why.
+**Send** asks you to confirm, then sends through [Resend](https://resend.com) to the lead/client address. Subjects are **Quick check-in** (follow-ups) and **Invoice reminder** (invoices); the body is the note you edited. The nudge is marked `sent` (with `sentAt`) **only if Resend accepts the mail**. If it fails — missing keys, bad from-address, Resend error — the draft stays a draft and the peach error on the card tells you why.
 
-**Send later** (on the same card): pick a future date/time, or a shortcut like **In 3 days**, then **Save draft**. Status stays `draft` until the mail goes out. A daily Vercel Cron job (`/api/cron/send-due-nudges`, 15:00 UTC) sends due drafts through the same Resend path as **Send email**. Unscheduled drafts are not auto-sent.
+**Schedule** (on the same card): pick a future date/time, or a shortcut like **In 3 days**, then **Save for later**. Status stays `draft` until the mail goes out. A daily Vercel Cron job (`/api/cron/send-due-nudges`, 15:00 UTC) sends due drafts through the same Resend path as **Send**. Unscheduled drafts are not auto-sent.
 
 Until a Google Sheet is connected, the default store is in-memory and **starts empty** — add a person or an invoice from `/app`. The CSVs in [`data/`](data/) are header rows only (a Sheets copy can be empty headers too). Locally, mutations also write `.data/local-store.json` (gitignored). On a read-only host that file is skipped and the process keeps an in-memory copy. **Production auto-sends need Sheets** (`STACKLESS_DATA_STORE=sheets`) so a scheduled draft is still there when cron runs.
 
@@ -109,7 +109,7 @@ The site still **builds** without these. Send email will say **Add RESEND_API_KE
 4. Set `RESEND_FROM_EMAIL`:
    - **Testing:** `Stackless <onboarding@resend.dev>` — Resend’s onboarding address. It can only send **to the email on your Resend account**, not to random clients.
    - **Real client mail:** [Domains](https://resend.com/domains) → add your domain → add the DNS records they show → wait until it says verified. Then use an address on that domain, like `Stackless <hello@yourdomain.com>`.
-5. Restart `npm run dev`. Tap **Send email** on `/app`, confirm, and check the inbox (or Resend’s **Emails** log).
+5. Restart `npm run dev`. Tap **Send** on `/app`, confirm, and check the inbox (or Resend’s **Emails** log).
 6. On Vercel: **Settings** → **Environment Variables** → add `RESEND_API_KEY` and `RESEND_FROM_EMAIL` for Production / Preview / Development → **Redeploy**.
 
 The send path is server-only (`sendNudgeAction` in `app/app/actions.ts` and `deliverNudgeDraft` in `lib/email/deliver.ts`). The `resend` package is never imported from a client component. Cron reuses that same path.

@@ -22,8 +22,11 @@ const quietBtn =
 const mintBtn =
   "cursor-pointer rounded-full border-0 bg-mint px-4 py-2 font-[inherit] text-[0.9rem] font-extrabold text-[#145c3d] disabled:cursor-not-allowed disabled:opacity-60";
 
+const ghostBtn =
+  "cursor-pointer rounded-full border-0 bg-transparent px-3 py-2 font-[inherit] text-[0.85rem] font-semibold text-muted disabled:cursor-not-allowed disabled:opacity-60";
+
 const textareaClass =
-  "mt-2 w-full resize-y rounded-[16px] border border-line bg-white p-3 font-[inherit] text-[0.95rem] text-bubble outline-none focus:border-peach";
+  "mt-1 w-full resize-y rounded-[16px] border border-line bg-white p-3 font-[inherit] text-[0.95rem] text-bubble outline-none focus:border-peach";
 
 const fieldClass =
   "w-full rounded-[16px] border border-line bg-white px-3 py-2 font-[inherit] text-[0.95rem] text-bubble outline-none focus:border-peach";
@@ -62,14 +65,11 @@ export function NudgeActions({
   const [text, setText] = useState(initialText);
   const [scheduledFor, setScheduledFor] = useState(initialScheduledFor ?? "");
   const [pickedDays, setPickedDays] = useState<number | null>(null);
+  const [scheduling, setScheduling] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [sendState, sendAction, sending] = useActionState(sendNudgeAction, null);
-  const tagClass =
-    kind === "invoice" ? "bg-invoice-bg text-invoice-fg" : "bg-follow-bg text-follow-fg";
-  const sendLabel = sending ? "Sending…" : confirming ? "Yes, send it" : "Send email";
-  const confirmLine = toEmail
-    ? `Send this to ${toEmail}?`
-    : "Send this email now?";
+  const sendLabel = sending ? "Sending…" : confirming ? "Yes, send it" : "Send";
+  const confirmLine = toEmail ? `Send this to ${toEmail}?` : "Send this email now?";
   const scheduleDue = Boolean(scheduledFor) && isScheduledDue(scheduledFor, new Date());
   const stoppedRetrying = (sendAttempts ?? 0) >= MAX_NUDGE_SEND_ATTEMPTS;
 
@@ -91,11 +91,7 @@ export function NudgeActions({
   return (
     <div className="mt-3">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <span
-          className={`inline-block rounded-full px-[0.55rem] py-[0.15rem] text-[0.72rem] font-extrabold ${tagClass}`}
-        >
-          {nudgeId ? (scheduledFor ? "Scheduled draft" : "Draft") : "Write a draft"}
-        </span>
+        <span className="text-[0.82rem] font-bold text-muted">Note</span>
         <CopyButton text={text} />
       </div>
       <form className="flex flex-col gap-3">
@@ -106,54 +102,70 @@ export function NudgeActions({
         <textarea
           name="draftText"
           className={textareaClass}
-          rows={4}
+          rows={3}
           value={text}
           disabled={sending}
           onChange={(event) => setText(event.target.value)}
         />
-        <div className="rounded-[16px] border border-line bg-phone-wash p-3">
-          <p className="mb-1 text-[0.82rem] font-bold text-muted">Send later</p>
-          <p className="mb-2 text-[0.85rem] text-muted">
-            Pick a time and save the draft. If you’re offline, we’ll still send it when it’s due.
-          </p>
-          <div className="mb-2 flex flex-wrap gap-2">
-            {SHORTCUTS.map((shortcut) => (
-              <button
-                key={shortcut.days}
-                className={pickedDays === shortcut.days ? chipOn : chip}
-                type="button"
-                disabled={sending}
-                onClick={() => pickRelative(shortcut.days)}
-              >
-                {shortcut.label}
-              </button>
-            ))}
-            {scheduledFor ? (
-              <button className={chip} type="button" disabled={sending} onClick={clearSchedule}>
-                Not scheduled
-              </button>
-            ) : null}
-          </div>
-          <label className="block">
-            <span className="mb-1 block text-[0.82rem] font-bold text-muted">Date and time</span>
-            <input
-              className={fieldClass}
-              type="datetime-local"
-              disabled={sending}
-              value={scheduledFor ? isoToDatetimeLocal(scheduledFor) : ""}
-              onChange={(event) => pickDatetime(event.target.value)}
-            />
-          </label>
-          {scheduledFor ? (
-            <p className="mt-2 text-[0.88rem] font-semibold text-follow-fg">
-              {scheduleDue
-                ? `Due now — we’ll send it on the next daily check, or tap Send email.`
-                : `We’ll send this ${formatScheduledFor(scheduledFor)} if you’re offline.`}
+        {scheduling ? (
+          <div className="rounded-[16px] border border-line bg-follow-bg p-3">
+            <p className="mb-1 text-[0.82rem] font-bold text-follow-fg">Send later</p>
+            <p className="mb-2 text-[0.85rem] text-muted">
+              Pick a time. We’ll still send it if you’re offline.
             </p>
-          ) : (
-            <p className="mt-2 text-[0.85rem] text-muted">No auto-send until you pick a time.</p>
-          )}
-        </div>
+            <div className="mb-2 flex flex-wrap gap-2">
+              {SHORTCUTS.map((shortcut) => (
+                <button
+                  key={shortcut.days}
+                  className={pickedDays === shortcut.days ? chipOn : chip}
+                  type="button"
+                  disabled={sending}
+                  onClick={() => pickRelative(shortcut.days)}
+                >
+                  {shortcut.label}
+                </button>
+              ))}
+              {scheduledFor ? (
+                <button className={chip} type="button" disabled={sending} onClick={clearSchedule}>
+                  Not scheduled
+                </button>
+              ) : null}
+            </div>
+            <label className="block">
+              <span className="mb-1 block text-[0.82rem] font-bold text-muted">Date and time</span>
+              <input
+                className={fieldClass}
+                type="datetime-local"
+                disabled={sending}
+                value={scheduledFor ? isoToDatetimeLocal(scheduledFor) : ""}
+                onChange={(event) => pickDatetime(event.target.value)}
+              />
+            </label>
+            {scheduledFor ? (
+              <p className="mt-2 text-[0.88rem] font-semibold text-follow-fg">
+                {scheduleDue
+                  ? `Due now — we’ll send it on the next daily check, or tap Send.`
+                  : `We’ll send this ${formatScheduledFor(scheduledFor)} if you’re offline.`}
+              </p>
+            ) : (
+              <p className="mt-2 text-[0.85rem] text-muted">Pick a time, then save.</p>
+            )}
+            <div className="mt-3">
+              <button
+                className={mintBtn}
+                formAction={saveDraftAction}
+                type="submit"
+                disabled={sending}
+              >
+                Save for later
+              </button>
+            </div>
+          </div>
+        ) : scheduledFor ? (
+          <p className="text-[0.88rem] font-semibold text-follow-fg">
+            Scheduled {formatScheduledFor(scheduledFor)}
+          </p>
+        ) : null}
         {confirming ? (
           <p className="text-[0.92rem] font-semibold text-muted">{confirmLine}</p>
         ) : null}
@@ -164,7 +176,7 @@ export function NudgeActions({
           >
             Last scheduled send didn’t go through: {lastError}
             {stoppedRetrying
-              ? " We stopped auto-retrying. Save the draft or send it yourself."
+              ? " We stopped auto-retrying. Save the note or send it yourself."
               : " We’ll try again on the next daily check."}
           </p>
         ) : null}
@@ -176,18 +188,10 @@ export function NudgeActions({
             {sendState.error}
           </p>
         ) : null}
-        <div className="flex flex-wrap gap-2">
-          <button
-            className={primaryBtn}
-            formAction={saveDraftAction}
-            type="submit"
-            disabled={sending}
-          >
-            Save draft
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
           {confirming ? (
             <>
-              <button className={mintBtn} formAction={sendAction} type="submit" disabled={sending}>
+              <button className={primaryBtn} formAction={sendAction} type="submit" disabled={sending}>
                 {sendLabel}
               </button>
               <button
@@ -201,17 +205,31 @@ export function NudgeActions({
             </>
           ) : (
             <button
-              className={mintBtn}
+              className={primaryBtn}
               type="button"
               disabled={sending}
               onClick={() => setConfirming(true)}
             >
-              Send email
+              Send
             </button>
           )}
+          <button
+            className={scheduling ? mintBtn : quietBtn}
+            type="button"
+            disabled={sending}
+            aria-pressed={scheduling}
+            onClick={() => setScheduling((open) => !open)}
+          >
+            Schedule
+          </button>
           <button className={quietBtn} formAction={skipAction} type="submit" disabled={sending}>
             Skip
           </button>
+          {!scheduling ? (
+            <button className={ghostBtn} formAction={saveDraftAction} type="submit" disabled={sending}>
+              Save note
+            </button>
+          ) : null}
         </div>
       </form>
     </div>
