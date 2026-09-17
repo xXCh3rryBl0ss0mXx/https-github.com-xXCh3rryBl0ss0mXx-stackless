@@ -27,9 +27,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-- Signed out: the **top-right Sign Up** chip opens Clerk sign-up. **Get early access** (hero and bottom) opens the waitlist — not a `mailto:` link.
+- Signed out: the header shows outline **Sign In** (`/sign-in`) immediately left of peach **Sign Up** (`/sign-up`). **Get early access** (hero and bottom) opens the waitlist — not a `mailto:` link.
 - After you join: **You’re on the list** (also at `/waitlist?joined=1`).
-- Signed in: **Today’s List** (opens `/app`) sits next to your Clerk profile button (UserButton). Signed out (and while Clerk loads, or without Clerk keys) the header only shows **Sign Up**.
+- Signed in: **Today’s List** (opens `/app`) sits next to your Clerk profile button (UserButton). Signed out (and while Clerk loads, or without Clerk keys) the header shows **Sign In** and **Sign Up**, not Today’s List.
 - The profile menu still has **Manage account** and **Sign out**. Manage account opens the peach `/account` page (Clerk profile options, not a black Clerk portal). Sign out still signs you out.
 - `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
 - `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can add people and invoices. With keys, signed-out visits go to the peach `/sign-in` page (not Clerk’s hosted Account Portal), then back to `/app`. Signed in without an active Stripe subscription, `/app` shows a peach **paywall** (Subscribe — $19/month), not a crash. Unsigned `/account` visits go to the same peach Sign In, then back to `/account`.
