@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/data/memory-store.test.ts lib/data/sheets-map.test.ts lib/data/sheets-store.test.ts lib/data/neon-store.test.ts lib/data/store-kind.test.ts lib/data/due-nudges.test.ts lib/data/today-queue.test.ts lib/clerk-paths.test.ts lib/clerk.test.ts lib/email/send.test.ts lib/schedule.test.ts lib/cron/send-due-nudges.test.ts lib/stripe/config.test.ts lib/stripe/subscription.test.ts lib/stripe/webhook.test.ts"
+    "test": "tsx --test lib/data/memory-store.test.ts lib/data/sheets-map.test.ts lib/data/sheets-store.test.ts lib/data/neon-store.test.ts lib/data/store-kind.test.ts lib/data/due-nudges.test.ts lib/data/today-queue.test.ts lib/clerk-paths.test.ts lib/clerk.test.ts lib/legal.test.ts lib/email/send.test.ts lib/schedule.test.ts lib/cron/send-due-nudges.test.ts lib/stripe/config.test.ts lib/stripe/subscription.test.ts lib/stripe/webhook.test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.3",

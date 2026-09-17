@@ -1,3 +1,5 @@
+import { PRIVACY_PATH, TERMS_PATH } from "./legal";
+
 /** True when a Clerk publishable key is present (starts with pk_test_ or pk_live_). */
 export function isClerkConfigured(): boolean {
   const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -72,9 +74,9 @@ export const clerkUserButtonAppearance = {
  */
 export const clerkAppearance = {
   layout: {
-    // Prefer no marketing links in the component chrome
-    termsPageUrl: undefined,
-    privacyPageUrl: undefined,
+    // Public legal pages — not marketing chrome. Footer branding stays hidden.
+    termsPageUrl: TERMS_PATH,
+    privacyPageUrl: PRIVACY_PATH,
     helpPageUrl: undefined,
   },
   variables: {

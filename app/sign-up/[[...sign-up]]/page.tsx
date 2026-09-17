@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
+import { SiteFooter } from "@/components/site-footer";
 import { isClerkConfigured } from "@/lib/clerk";
 import { APP_PATH, CLERK_SIGN_IN_PATH } from "@/lib/clerk-paths";
 
@@ -50,6 +51,9 @@ export default function SignUpPage() {
           )}
         </div>
       </main>
+      <div className="mx-auto w-[min(960px,calc(100%-2rem))]">
+        <SiteFooter />
+      </div>
     </div>
   );
 }

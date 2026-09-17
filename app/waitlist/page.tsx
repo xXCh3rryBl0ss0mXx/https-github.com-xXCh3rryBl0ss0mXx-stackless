@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EarlyAccessForm, WaitlistSuccess } from "@/components/early-access-form";
+import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
   title: "Get early access — Stackless",
@@ -47,6 +48,8 @@ export default async function WaitlistPage({
           </>
         )}
       </section>
+
+      <SiteFooter />
     </div>
   );
 }
