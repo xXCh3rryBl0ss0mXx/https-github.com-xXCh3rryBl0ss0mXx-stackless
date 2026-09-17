@@ -9,6 +9,64 @@ const pageWash = "#fff8f0";
 const line = "#f0e2d4";
 
 /**
+ * UserButton popover is a different slot than auth `footer`. Clerk paints that
+ * footer with `colorBackground` (cream) behind a smaller-radius main card, so
+ * the peach page shows through as a curved seam. One solid white card, no chrome.
+ */
+const userButtonPopoverElements = {
+  userButtonBox: {
+    width: "auto",
+    maxWidth: "none",
+  },
+  userButtonPopoverRootBox: {
+    width: "auto",
+    maxWidth: "none",
+    margin: "0",
+    background: "transparent",
+  },
+  popoverBox: {
+    background: cardSurface,
+    backgroundColor: `${cardSurface} !important`,
+    overflow: "hidden",
+  },
+  userButtonPopoverCard: {
+    background: cardSurface,
+    backgroundColor: `${cardSurface} !important`,
+    overflow: "hidden",
+    boxShadow: "0 18px 40px rgba(80, 50, 20, 0.06)",
+    border: `1px solid ${line}`,
+  },
+  userButtonPopoverMain: {
+    background: `${cardSurface} !important`,
+    backgroundColor: `${cardSurface} !important`,
+    borderRadius: "0",
+    margin: "0",
+    boxShadow: "none",
+    border: "none",
+  },
+  userButtonPopoverFooter: {
+    display: "none",
+  },
+  userButtonPopoverFooterPagesLink: {
+    display: "none",
+  },
+};
+
+/** Profile avatar menu — do not inherit the 28rem auth-card `rootBox`. */
+export const clerkUserButtonAppearance = {
+  elements: {
+    rootBox: {
+      width: "auto",
+      maxWidth: "none",
+      margin: "0",
+      background: "transparent",
+      display: "inline-flex",
+    },
+    ...userButtonPopoverElements,
+  },
+};
+
+/**
  * One continuous card: Clerk’s default splits card + gray footer with inset
  * edges (“dents”). Put the border/radius on cardBox and paint footer white.
  */
@@ -30,6 +88,7 @@ export const clerkAppearance = {
     fontFamily: '"Trebuchet MS", "Segoe UI", system-ui, sans-serif',
   },
   elements: {
+    ...userButtonPopoverElements,
     rootBox: {
       width: "100%",
       maxWidth: "28rem",
