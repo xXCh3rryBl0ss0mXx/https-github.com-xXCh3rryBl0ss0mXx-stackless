@@ -1,1 +1,1 @@
-id,name,email,company,status,last_contact_at,next_follow_up_at,notes,created_at
+id,name,email,company,status,last_contact_at,next_follow_up_at,notes,created_at,user_id

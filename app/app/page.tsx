@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { currentDataOwnerId } from "@/lib/current-data-owner";
 import { NudgeBoard } from "@/components/nudge-board";
 import { PastDueBanner, Paywall } from "@/components/paywall";
 import { getDataStore } from "@/lib/data/store";
@@ -59,6 +60,7 @@ export default async function AppPage({
     );
   }
   const today = todayStamp();
+  const userId = await currentDataOwnerId();
 
   let dueLeads: Lead[];
   let overdueInvoices: Invoice[];
@@ -68,11 +70,11 @@ export default async function AppPage({
   try {
     const store = getDataStore();
     [dueLeads, overdueInvoices, leads, invoices, nudges] = await Promise.all([
-      store.listLeadsNeedingFollowUp(today),
-      store.listOverdueInvoices(today),
-      store.listLeads(),
-      store.listInvoices(),
-      store.listNudges(),
+      store.listLeadsNeedingFollowUp(userId, today),
+      store.listOverdueInvoices(userId, today),
+      store.listLeads(userId),
+      store.listInvoices(userId),
+      store.listNudges(userId),
     ]);
   } catch (err) {
     const message =

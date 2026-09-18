@@ -1,3 +1,4 @@
+import { ownerIdOf } from "./owner";
 import { INVOICE_STATUSES, LEAD_STATUSES } from "./record-input";
 import type {
   Invoice,
@@ -58,6 +59,7 @@ function parseInvoiceStatus(raw: unknown): InvoiceStatus {
 export function leadFromDb(row: Record<string, unknown>): Lead {
   return omitUndefined({
     id: requireText(row, "id", "Lead row"),
+    userId: ownerIdOf(asText(row.user_id)),
     name: requireText(row, "name", "Lead row"),
     email: requireText(row, "email", "Lead row"),
     company: optionalText(row.company),
@@ -76,6 +78,7 @@ export function invoiceFromDb(row: Record<string, unknown>): Invoice {
   }
   return omitUndefined({
     id: requireText(row, "id", "Invoice row"),
+    userId: ownerIdOf(asText(row.user_id)),
     clientName: requireText(row, "client_name", "Invoice row"),
     clientEmail: requireText(row, "client_email", "Invoice row"),
     invoiceNumber: requireText(row, "invoice_number", "Invoice row"),
@@ -99,6 +102,7 @@ export function nudgeFromDb(row: Record<string, unknown>): Nudge {
   }
   return omitUndefined({
     id: requireText(row, "id", "Nudge row"),
+    userId: ownerIdOf(asText(row.user_id)),
     kind,
     relatedId: requireText(row, "related_id", "Nudge row"),
     channel: "email" as const,
@@ -123,6 +127,7 @@ export function leadToDb(lead: Lead): Record<string, unknown> {
     next_follow_up_at: lead.nextFollowUpAt ?? null,
     notes: lead.notes ?? null,
     created_at: lead.createdAt,
+    user_id: lead.userId ?? null,
   };
 }
 
@@ -138,6 +143,7 @@ export function invoiceToDb(invoice: Invoice): Record<string, unknown> {
     last_nudged_at: invoice.lastNudgedAt ?? null,
     payment_link: invoice.paymentLink ?? null,
     created_at: invoice.createdAt,
+    user_id: invoice.userId ?? null,
   };
 }
 
@@ -154,6 +160,7 @@ export function nudgeToDb(nudge: Nudge): Record<string, unknown> {
     created_at: nudge.createdAt,
     last_error: nudge.lastError ?? null,
     send_attempts: nudge.sendAttempts ?? null,
+    user_id: nudge.userId ?? null,
   };
 }
 
@@ -167,6 +174,7 @@ export const LEAD_DB_COLUMNS = [
   "next_follow_up_at",
   "notes",
   "created_at",
+  "user_id",
 ] as const;
 
 export const INVOICE_DB_COLUMNS = [
@@ -180,6 +188,7 @@ export const INVOICE_DB_COLUMNS = [
   "last_nudged_at",
   "payment_link",
   "created_at",
+  "user_id",
 ] as const;
 
 export const NUDGE_DB_COLUMNS = [
@@ -194,6 +203,7 @@ export const NUDGE_DB_COLUMNS = [
   "created_at",
   "last_error",
   "send_attempts",
+  "user_id",
 ] as const;
 
 export function dbValues(

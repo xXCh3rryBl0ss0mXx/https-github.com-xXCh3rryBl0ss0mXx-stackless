@@ -2,9 +2,12 @@ import type { Invoice, Lead, Nudge, StoreSnapshot } from "./types";
 
 /** In-test records only. Product seed/CSVs stay empty. */
 
+export const FIXTURE_USER_ID = "user_test";
+
 export const fixtureLeads: Lead[] = [
   {
     id: "lead_001",
+    userId: FIXTURE_USER_ID,
     name: "Sam Lee",
     email: "sam@example.com",
     company: "Lee Studio",
@@ -16,6 +19,7 @@ export const fixtureLeads: Lead[] = [
   },
   {
     id: "lead_002",
+    userId: FIXTURE_USER_ID,
     name: "Jordan Kim",
     email: "jordan@example.com",
     status: "new",
@@ -27,6 +31,7 @@ export const fixtureLeads: Lead[] = [
 export const fixtureInvoices: Invoice[] = [
   {
     id: "inv_001",
+    userId: FIXTURE_USER_ID,
     clientName: "Sam Lee",
     clientEmail: "sam@example.com",
     invoiceNumber: "1042",
@@ -39,6 +44,7 @@ export const fixtureInvoices: Invoice[] = [
   },
   {
     id: "inv_002",
+    userId: FIXTURE_USER_ID,
     clientName: "Alex Rivera",
     clientEmail: "alex@example.com",
     invoiceNumber: "1043",
@@ -53,6 +59,7 @@ export const fixtureInvoices: Invoice[] = [
 export const fixtureNudges: Nudge[] = [
   {
     id: "nudge_001",
+    userId: FIXTURE_USER_ID,
     kind: "follow_up",
     relatedId: "lead_001",
     channel: "email",
@@ -64,6 +71,7 @@ export const fixtureNudges: Nudge[] = [
   },
   {
     id: "nudge_002",
+    userId: FIXTURE_USER_ID,
     kind: "invoice",
     relatedId: "inv_001",
     channel: "email",

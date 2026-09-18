@@ -14,6 +14,8 @@ export type Channel = "email"; // SMS later
 
 export type Lead = {
   id: string;
+  /** Clerk user id. Missing on unowned legacy rows — those are never listed. */
+  userId?: string;
   name: string;
   email: string;
   company?: string;
@@ -26,6 +28,8 @@ export type Lead = {
 
 export type Invoice = {
   id: string;
+  /** Clerk user id. Missing on unowned legacy rows — those are never listed. */
+  userId?: string;
   clientName: string;
   clientEmail: string;
   invoiceNumber: string;
@@ -39,6 +43,8 @@ export type Invoice = {
 
 export type Nudge = {
   id: string;
+  /** Clerk user id. Missing on unowned legacy rows — those are never listed. */
+  userId?: string;
   kind: NudgeKind;
   relatedId: string;
   channel: Channel;
@@ -86,31 +92,39 @@ export type InvoiceWrite = {
 };
 
 export type DataStore = {
-  listLeads(): Promise<Lead[]>;
-  listLeadsNeedingFollowUp(today: string): Promise<Lead[]>;
-  listInvoices(): Promise<Invoice[]>;
-  listOpenInvoices(): Promise<Invoice[]>;
-  listOverdueInvoices(today: string): Promise<Invoice[]>;
-  listNudges(): Promise<Nudge[]>;
-  getLead(id: string): Promise<Lead | null>;
-  getInvoice(id: string): Promise<Invoice | null>;
-  createLead(input: LeadWrite): Promise<Lead>;
-  updateLead(id: string, input: LeadWrite): Promise<Lead>;
+  listLeads(userId: string): Promise<Lead[]>;
+  listLeadsNeedingFollowUp(userId: string, today: string): Promise<Lead[]>;
+  listInvoices(userId: string): Promise<Invoice[]>;
+  listOpenInvoices(userId: string): Promise<Invoice[]>;
+  listOverdueInvoices(userId: string, today: string): Promise<Invoice[]>;
+  listNudges(userId: string): Promise<Nudge[]>;
+  getLead(userId: string, id: string): Promise<Lead | null>;
+  getInvoice(userId: string, id: string): Promise<Invoice | null>;
+  createLead(userId: string, input: LeadWrite): Promise<Lead>;
+  updateLead(userId: string, id: string, input: LeadWrite): Promise<Lead>;
   /** Removes the lead and any draft nudges for it. Sent/skipped history stays. */
-  deleteLead(id: string): Promise<void>;
-  createInvoice(input: InvoiceWrite): Promise<Invoice>;
-  updateInvoice(id: string, input: InvoiceWrite): Promise<Invoice>;
+  deleteLead(userId: string, id: string): Promise<void>;
+  createInvoice(userId: string, input: InvoiceWrite): Promise<Invoice>;
+  updateInvoice(userId: string, id: string, input: InvoiceWrite): Promise<Invoice>;
   /** Removes the invoice and any draft nudges for it. Sent/skipped history stays. */
-  deleteInvoice(id: string): Promise<void>;
-  createNudgeDraft(input: {
-    kind: NudgeKind;
-    relatedId: string;
-    draftText: string;
-    scheduledFor?: string;
-  }): Promise<Nudge>;
-  updateNudgeDraft(id: string, input: NudgeDraftWrite): Promise<Nudge>;
+  deleteInvoice(userId: string, id: string): Promise<void>;
+  createNudgeDraft(
+    userId: string,
+    input: {
+      kind: NudgeKind;
+      relatedId: string;
+      draftText: string;
+      scheduledFor?: string;
+    },
+  ): Promise<Nudge>;
+  updateNudgeDraft(userId: string, id: string, input: NudgeDraftWrite): Promise<Nudge>;
   /** Stay draft; bump sendAttempts and lastError so cron can skip after N failures. */
-  recordNudgeSendFailure(id: string, error: string): Promise<void>;
-  markNudgeSent(id: string, sentAt: string): Promise<void>;
-  markNudgeSkipped(id: string): Promise<void>;
+  recordNudgeSendFailure(userId: string, id: string, error: string): Promise<void>;
+  markNudgeSent(userId: string, id: string, sentAt: string): Promise<void>;
+  markNudgeSkipped(userId: string, id: string): Promise<void>;
+  /**
+   * Distinct owners of nudge rows. Unowned (blank) user ids are omitted so cron
+   * never sends or logs against legacy shared records.
+   */
+  listNudgeOwnerIds(): Promise<string[]>;
 };

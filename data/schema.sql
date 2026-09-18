@@ -1,7 +1,10 @@
 -- Stackless production schema (Neon Postgres).
 -- Tables match the DataStore types in lib/data/types.ts (leads, invoices, nudge_log).
--- The app also runs these CREATE statements on first use (IF NOT EXISTS), so you
--- can skip pasting this if you only set DATABASE_URL + STACKLESS_DATA_STORE=neon.
+-- Each row is owned by a Clerk user id (`user_id`). Legacy rows may have a NULL
+-- user_id; the app never lists, updates, or auto-sends those, and does not
+-- backfill an owner. The app also runs these statements on first use
+-- (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS), so you can skip pasting this if
+-- you only set DATABASE_URL + STACKLESS_DATA_STORE=neon.
 -- Optional: SQL Editor in the Neon console → paste this file → Run.
 
 CREATE TABLE IF NOT EXISTS leads (
@@ -13,7 +16,8 @@ CREATE TABLE IF NOT EXISTS leads (
   last_contact_at TEXT,
   next_follow_up_at TEXT,
   notes TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  user_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS invoices (
@@ -26,7 +30,8 @@ CREATE TABLE IF NOT EXISTS invoices (
   due_date TEXT NOT NULL,
   last_nudged_at TEXT,
   payment_link TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  user_id TEXT
 );
 
 CREATE TABLE IF NOT EXISTS nudge_log (
@@ -40,8 +45,15 @@ CREATE TABLE IF NOT EXISTS nudge_log (
   sent_at TEXT,
   created_at TEXT NOT NULL,
   last_error TEXT,
-  send_attempts INTEGER
+  send_attempts INTEGER,
+  user_id TEXT
 );
+
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS user_id TEXT;
+
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS user_id TEXT;
+
+ALTER TABLE nudge_log ADD COLUMN IF NOT EXISTS user_id TEXT;
 
 CREATE INDEX IF NOT EXISTS nudge_log_related_id_idx ON nudge_log (related_id);
 
@@ -50,3 +62,9 @@ CREATE INDEX IF NOT EXISTS nudge_log_status_idx ON nudge_log (status);
 CREATE INDEX IF NOT EXISTS leads_next_follow_up_at_idx ON leads (next_follow_up_at);
 
 CREATE INDEX IF NOT EXISTS invoices_due_date_idx ON invoices (due_date);
+
+CREATE INDEX IF NOT EXISTS leads_user_id_idx ON leads (user_id);
+
+CREATE INDEX IF NOT EXISTS invoices_user_id_idx ON invoices (user_id);
+
+CREATE INDEX IF NOT EXISTS nudge_log_user_id_idx ON nudge_log (user_id);
