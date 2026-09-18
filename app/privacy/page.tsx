@@ -76,6 +76,7 @@ export default function PrivacyPage() {
           <li>Resend — outbound email</li>
           <li>Neon — Postgres, the production store</li>
           <li>Vercel — hosting</li>
+          <li>Grok Bot — helps build and run Stackless</li>
         </ul>
       </LegalSection>
 
@@ -91,7 +92,7 @@ export default function PrivacyPage() {
         <p>
           You can edit or delete leads, invoices, and drafts in the app. To
           delete your account and the data we hold, email <LegalMail /> and
-          Michael will handle it. Stripe may keep billing records they are
+          our team will handle it. Stripe may keep billing records they are
           required to keep.
         </p>
         <p>
