@@ -92,7 +92,7 @@ export default function PrivacyPage() {
         <p>
           You can edit or delete leads, invoices, and drafts in the app. To
           delete your account and the data we hold, email <LegalMail /> and
-          Michael will handle it. Stripe may keep billing records they are
+          our team will handle it. Stripe may keep billing records they are
           required to keep.
         </p>
         <p>

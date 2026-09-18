@@ -34,3 +34,12 @@ test("privacy Who helps run this lists Grok Bot with the other operators", () =>
   assert.doesNotMatch(terms, /Who helps run this/);
   assert.doesNotMatch(terms, /Grok Bot/);
 });
+
+test("privacy deletion asks the team, not Michael by name", () => {
+  const privacy = readFileSync(join(process.cwd(), "app/privacy/page.tsx"), "utf8");
+  const deletion = privacy.split('title="Deletion"')[1]?.split("</LegalSection>")[0] ?? "";
+
+  assert.ok(deletion.includes("our team will handle it"));
+  assert.doesNotMatch(deletion, /Michael/);
+  assert.ok(deletion.includes("Stripe may keep billing records"));
+});
