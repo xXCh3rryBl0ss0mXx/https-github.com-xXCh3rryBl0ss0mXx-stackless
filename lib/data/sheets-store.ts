@@ -287,7 +287,8 @@ export class SheetsDataStore implements DataStore {
     return [...ids];
   }
 
-  async addWaitlistSignup(_email: string): Promise<WaitlistSignupWriteResult> {
+  async addWaitlistSignup(email: string): Promise<WaitlistSignupWriteResult> {
+    void email;
     throw new Error(SHEETS_WAITLIST_UNSUPPORTED);
   }
 
