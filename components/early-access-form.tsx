@@ -50,7 +50,10 @@ export function EarlyAccessForm() {
   if (status === "already") return <WaitlistSuccess already />;
 
   return (
-    <form className="flex max-w-[22rem] flex-col gap-3" onSubmit={onSubmit}>
+    <form
+      className="mx-auto flex w-full max-w-[22rem] flex-col items-center gap-3"
+      onSubmit={onSubmit}
+    >
       <label className="sr-only" htmlFor={emailId}>
         Email
       </label>
@@ -65,7 +68,7 @@ export function EarlyAccessForm() {
         disabled={pending}
       />
       {submitError ? (
-        <p className="text-[0.9rem] text-[#b42318]" role="alert">
+        <p className="w-full text-center text-[0.9rem] text-[#b42318]" role="alert">
           {submitError}
         </p>
       ) : null}
