@@ -4,6 +4,10 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { CONTACT_EMAIL, LEGAL_UPDATED_ON, PRIVACY_PATH, TERMS_PATH } from "./legal";
 
+function readRepo(...parts: string[]) {
+  return readFileSync(join(process.cwd(), ...parts), "utf8");
+}
+
 test("legal pages share the 2026-09-17 update stamp and public paths", () => {
   assert.equal(LEGAL_UPDATED_ON, "2026-09-17");
   assert.equal(TERMS_PATH, "/terms");
@@ -12,8 +16,8 @@ test("legal pages share the 2026-09-17 update stamp and public paths", () => {
 });
 
 test("privacy Who helps run this lists Grok Bot with the other operators", () => {
-  const privacy = readFileSync(join(process.cwd(), "app/privacy/page.tsx"), "utf8");
-  const terms = readFileSync(join(process.cwd(), "app/terms/page.tsx"), "utf8");
+  const privacy = readRepo("components", "legal-privacy.tsx");
+  const terms = readRepo("components", "legal-terms.tsx");
   const helpers = privacy.split('title="Who helps run this"')[1]?.split("</LegalSection>")[0] ?? "";
 
   assert.match(privacy, /title="Who helps run this"/);
@@ -36,10 +40,21 @@ test("privacy Who helps run this lists Grok Bot with the other operators", () =>
 });
 
 test("privacy deletion asks the team, not Michael by name", () => {
-  const privacy = readFileSync(join(process.cwd(), "app/privacy/page.tsx"), "utf8");
+  const privacy = readRepo("components", "legal-privacy.tsx");
   const deletion = privacy.split('title="Deletion"')[1]?.split("</LegalSection>")[0] ?? "";
 
   assert.ok(deletion.includes("our team will handle it"));
   assert.doesNotMatch(deletion, /Michael/);
   assert.ok(deletion.includes("Stripe may keep billing records"));
+});
+
+test("public /terms and /privacy render the shared documents, not a second copy", () => {
+  const privacyPage = readRepo("app", "privacy", "page.tsx");
+  const termsPage = readRepo("app", "terms", "page.tsx");
+
+  assert.match(privacyPage, /<PrivacyDocument/);
+  assert.doesNotMatch(privacyPage, /Grok Bot/);
+  assert.doesNotMatch(privacyPage, /our team will handle it/);
+  assert.match(termsPage, /<TermsDocument/);
+  assert.doesNotMatch(termsPage, /Who this is/);
 });

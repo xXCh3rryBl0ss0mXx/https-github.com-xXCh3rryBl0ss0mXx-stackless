@@ -165,8 +165,14 @@ export const clerkAppearance = {
     footerActionLink: {
       color: "#e07a3a",
     },
+    // Terms + Privacy on Sign Up (and Sign In). Manage account pages are extra.
     footerPages: {
-      display: "none",
+      background: `${cardSurface} !important`,
+      backgroundColor: `${cardSurface} !important`,
+      padding: "0 1rem 1rem",
+    },
+    footerPagesLink: {
+      color: "#e07a3a",
     },
     // "Secured by Clerk" / logo row
     logoBox: {
@@ -219,6 +225,10 @@ export const clerkUserProfileAppearance = {
     },
     profileSectionTitle: {
       color: "#2b2118",
+    },
+    // Sidenav already has Terms/Privacy — don’t add a second Clerk footer here.
+    footerPages: {
+      display: "none",
     },
   },
 };

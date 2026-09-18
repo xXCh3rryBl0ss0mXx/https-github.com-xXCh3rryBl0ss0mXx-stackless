@@ -100,18 +100,27 @@ body {
 .cl-pageScrollBox,
 .cl-profilePage {
   background-color: #ffffff !important;
+  min-width: 0;
 }
 
-/* Hide Clerk waitlist/auth chrome: "Secured by Clerk" + "Development mode" */
+/* Hide Clerk waitlist/auth chrome: "Secured by Clerk" + "Development mode".
+ * Do not hide .cl-footerPages or legal-consent — Sign Up must keep Terms/Privacy. */
 .cl-badge,
 .cl-internal-b3fm6y,
-.cl-footerPages,
 .cl-logoBox,
 .cl-logoImage,
 a[href*="clerk.com"][target="_blank"],
 .cl-footer .cl-internal-1dauvpw,
 [data-clerk-dev-mode-overlay],
 [data-clerk-dev-mode-notice] {
+  display: none !important;
+}
+
+.cl-footerPagesLink {
+  color: #e07a3a !important;
+}
+
+.cl-userProfile-root .cl-footerPages {
   display: none !important;
 }
 
