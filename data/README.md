@@ -2,6 +2,8 @@
 
 **Production:** Neon Postgres. Create a free project, set `DATABASE_URL` and `STACKLESS_DATA_STORE=neon`. Schema: [`schema.sql`](schema.sql) (the app also bootstraps `CREATE TABLE IF NOT EXISTS`). Steps: [README.md](../README.md) → Neon Postgres.
 
+Tables: `leads`, `invoices`, `nudge_log` (each owned by a Clerk `user_id`), plus `waitlist_signups` for public early-access emails (no user id — not a lead).
+
 Default `STACKLESS_DATA_STORE=memory` starts with no records and needs no database. Sheets below is **legacy / optional** — not the recommended production path.
 
 ## Google Sheets tabs (legacy)
@@ -89,4 +91,4 @@ Leave `STACKLESS_DATA_STORE=memory` if you have not connected Neon or Sheets yet
 
 ## Thin adapter
 
-App code only calls `DataStore` functions in `lib/data/types.ts` — never SQL or Google Sheets column letters. Every read/update/delete takes the signed-in Clerk user id; creates stamp that id. Unowned legacy rows stay in the database but are not listed, edited, deleted, or auto-sent. `MemoryDataStore`, `NeonDataStore`, and `SheetsDataStore` all implement the same create/update/delete methods for leads and invoices, and persist `scheduledFor` on nudge create **and** update (plus `last_error` / `send_attempts` on failed auto-sends). Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. Neon is the production store; swapping stores does not change `/app`.
+App code only calls `DataStore` functions in `lib/data/types.ts` — never SQL or Google Sheets column letters. Every read/update/delete of people, invoices, and nudges takes the signed-in Clerk user id; creates stamp that id. Unowned legacy rows stay in the database but are not listed, edited, deleted, or auto-sent. Public waitlist emails use `addWaitlistSignup` on a separate `waitlist_signups` table (no `user_id`). `MemoryDataStore`, `NeonDataStore`, and `SheetsDataStore` all implement the same create/update/delete methods for leads and invoices, and persist `scheduledFor` on nudge create **and** update (plus `last_error` / `send_attempts` on failed auto-sends). Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. Neon is the production store; swapping stores does not change `/app`. Sheets refuses waitlist writes instead of claiming the address was saved.

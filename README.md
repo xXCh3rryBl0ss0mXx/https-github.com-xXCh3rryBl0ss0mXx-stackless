@@ -2,7 +2,7 @@
 
 Marketing landing for Stackless — a quiet inbox helper for freelancers.
 
-Early access signup uses [Clerk](https://clerk.com) **Waitlist** mode (email in, you’re on the list). Use **email only** — no Google, no phone.
+Early access signup writes the email to Neon (`waitlist_signups`). It does not use Clerk Waitlist and it is not a person on Today’s List. Clerk is still **email only** for accounts — no Google, no phone.
 
 The paid product loop lives at **`/app`** (Clerk-gated when keys are set, then a **$19/month** Stripe subscription): add and edit people and invoices, follow-ups and overdue invoices, editable drafts, send email via Resend, skip. Waitlist signup still exists; the workspace itself requires an active subscription.
 
@@ -34,7 +34,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - `/sign-up` and `/waitlist` are the same peach pages if you open them directly.
 - `/app` is today’s follow-up + overdue invoice list. Without Clerk keys it still opens so you can add people and invoices. With keys, signed-out visits go to the peach `/sign-in` page (not Clerk’s hosted Account Portal), then back to `/app`. Signed in without an active Stripe subscription, `/app` shows a peach **paywall** (Subscribe — $19/month), not a crash. Unsigned `/account` visits go to the same peach Sign In, then back to `/account`.
 
-`npm run build` works **without** Clerk, Stripe, Resend, Google, or `DATABASE_URL`. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email after you add the Clerk keys. Checkout is disabled until Stripe keys + `STRIPE_PRICE_ID` are set. Vercel preview/production **do** need Clerk (and Stripe for payments), then a **Redeploy**.
+`npm run build` works **without** Clerk, Stripe, Resend, Google, or `DATABASE_URL`. The peach landing still shows, and the buttons go to `/waitlist`. Signup only saves an email when `STACKLESS_DATA_STORE=neon` and `DATABASE_URL` are set. Checkout is disabled until Stripe keys + `STRIPE_PRICE_ID` are set. Vercel preview/production **do** need Clerk (and Stripe for payments), then a **Redeploy**.
 
 
 ## Today’s List (`/app`)
@@ -136,7 +136,7 @@ Neon’s `nudge_log` table includes `last_error` and `send_attempts` (see [`data
 
 Leave `STACKLESS_DATA_STORE=memory` for local and CI until a database is connected. The site **builds** without `DATABASE_URL`. Setting `STACKLESS_DATA_STORE=neon` (or `postgres`) without `DATABASE_URL` shows a peach error on `/app` (no sample keys).
 
-App code still talks only to `DataStore` in `lib/data/types.ts`. `NeonDataStore` is the production implementation (`lib/data/neon-store.ts`), using `@neondatabase/serverless` over HTTP — Vercel-friendly, no Google Cloud. Each row is owned by the signed-in Clerk user id; legacy rows with a blank `user_id` stay in Postgres but are not listed, edited, or auto-sent.
+App code still talks only to `DataStore` in `lib/data/types.ts`. `NeonDataStore` is the production implementation (`lib/data/neon-store.ts`), using `@neondatabase/serverless` over HTTP — Vercel-friendly, no Google Cloud. Each person, invoice, and nudge row is owned by the signed-in Clerk user id; legacy rows with a blank `user_id` stay in Postgres but are not listed, edited, or auto-sent. Public waitlist emails are a separate `waitlist_signups` table with no `user_id`.
 
 #### 1. Create a free Neon project (Michael)
 
@@ -193,7 +193,7 @@ To go back to the in-memory store (empty until you add records, or whatever is i
 
 ## Clerk setup (do this once)
 
-You already have the app. You still have to turn on Waitlist and paste keys yourself.
+You already have the app. You still have to paste Clerk keys yourself (accounts and `/app`). Early-access emails go to Neon, not Clerk Waitlist.
 
 ### 1. Open the Stackless Clerk app
 
@@ -203,14 +203,11 @@ You already have the app. You still have to turn on Waitlist and paste keys your
 
 If you ever need a new app: **Create application** → name it `Stackless` → email only.
 
-### 2. Turn on Waitlist
+### 2. Clerk is for accounts, not the waitlist
 
-Waitlist is what “Get early access” uses. If this is off, signup will error.
+“Get early access” saves the address in Neon (`waitlist_signups`) when `STACKLESS_DATA_STORE=neon` and `DATABASE_URL` are set. You do **not** need Clerk Waitlist mode for that form. Clerk keys are still required on Vercel for Sign In / Sign Up / `/app`.
 
-1. In the left sidebar, click **Waitlist**.
-2. Turn **Enable waitlist** on, then **Save**.
-
-If you don’t see **Waitlist**, look for **Configure** → **Access mode** or **Restrictions**, choose **Waitlist**, and save.
+If you previously turned **Enable waitlist** on in Clerk, you can leave it; the landing form no longer writes there.
 
 ### 3. Copy the two keys
 
@@ -244,7 +241,7 @@ That links this repo to the Stackless Clerk app and can write `.env.local`. Don�
 
 ### 5. Put the same keys on Vercel
 
-Preview deploys stay broken for signup until this is done.
+Preview deploys stay broken for **Sign In / Sign Up / `/app`** until this is done. Waitlist emails need Neon (`STACKLESS_DATA_STORE=neon` + `DATABASE_URL`), not these Clerk keys.
 
 1. Open the Stackless project on [Vercel](https://vercel.com).
 2. Go to **Settings** → **Environment Variables**.
@@ -254,7 +251,7 @@ Preview deploys stay broken for signup until this is done.
 6. Save.
 7. Go to **Deployments**, open the latest one, click the **⋯** menu → **Redeploy**.
 
-After that, “Get early access” on the live site should save emails. In Clerk, open **Waitlist** to see who joined. You can approve people later when the product is ready.
+After that, Sign In / Sign Up work on the live site. Early-access emails land in Neon’s `waitlist_signups` table (same email twice stays one row).
 
 ## Deploy
 

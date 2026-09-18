@@ -1,10 +1,11 @@
 -- Stackless production schema (Neon Postgres).
--- Tables match the DataStore types in lib/data/types.ts (leads, invoices, nudge_log).
--- Each row is owned by a Clerk user id (`user_id`). Legacy rows may have a NULL
--- user_id; the app never lists, updates, or auto-sends those, and does not
--- backfill an owner. The app also runs these statements on first use
--- (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS), so you can skip pasting this if
--- you only set DATABASE_URL + STACKLESS_DATA_STORE=neon.
+-- Tables match the DataStore types in lib/data/types.ts (leads, invoices, nudge_log,
+-- waitlist_signups). Each lead/invoice/nudge row is owned by a Clerk user id
+-- (`user_id`). Legacy rows may have a NULL user_id; the app never lists, updates,
+-- or auto-sends those, and does not backfill an owner. waitlist_signups is a
+-- public marketing list (no user_id) and is not a lead. The app also runs these
+-- statements on first use (IF NOT EXISTS / ADD COLUMN IF NOT EXISTS), so you can
+-- skip pasting this if you only set DATABASE_URL + STACKLESS_DATA_STORE=neon.
 -- Optional: SQL Editor in the Neon console → paste this file → Run.
 
 CREATE TABLE IF NOT EXISTS leads (
@@ -68,3 +69,12 @@ CREATE INDEX IF NOT EXISTS leads_user_id_idx ON leads (user_id);
 CREATE INDEX IF NOT EXISTS invoices_user_id_idx ON invoices (user_id);
 
 CREATE INDEX IF NOT EXISTS nudge_log_user_id_idx ON nudge_log (user_id);
+
+-- Public marketing waitlist (not a lead; no Clerk user_id).
+CREATE TABLE IF NOT EXISTS waitlist_signups (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS waitlist_signups_email_idx ON waitlist_signups (email);

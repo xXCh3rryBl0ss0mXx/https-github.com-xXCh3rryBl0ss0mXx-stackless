@@ -71,6 +71,19 @@ export type StoreSnapshot = {
   nudges: Nudge[];
 };
 
+/** Public marketing waitlist. Not a lead and not owned by a Clerk user. */
+export type WaitlistSignup = {
+  id: string;
+  email: string;
+  createdAt: string;
+};
+
+export type WaitlistSignupWriteResult = {
+  /** False when this email was already on the list — not an error. */
+  created: boolean;
+  signup: WaitlistSignup;
+};
+
 export type LeadWrite = {
   name: string;
   email: string;
@@ -127,4 +140,9 @@ export type DataStore = {
    * never sends or logs against legacy shared records.
    */
   listNudgeOwnerIds(): Promise<string[]>;
+  /**
+   * Public marketing waitlist. No Clerk user id. Same email twice is a no-op
+   * success (created: false), not a duplicate row.
+   */
+  addWaitlistSignup(email: string): Promise<WaitlistSignupWriteResult>;
 };

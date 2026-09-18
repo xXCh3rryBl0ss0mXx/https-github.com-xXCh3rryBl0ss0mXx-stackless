@@ -4,6 +4,7 @@ import { invoiceIsOpen, invoiceIsOverdue, leadNeedsFollowUp, newestFirst } from 
 import { nextPrefixedId } from "./ids";
 import { isOwnedBy, ownerIdOf, ownedByUser, requireOwnerId } from "./owner";
 import { applyInvoiceWrite, applyLeadWrite } from "./record-input";
+import { parseWaitlistEmail } from "./waitlist";
 import type {
   DataStore,
   Invoice,
@@ -14,6 +15,8 @@ import type {
   NudgeDraftWrite,
   NudgeKind,
   StoreSnapshot,
+  WaitlistSignup,
+  WaitlistSignupWriteResult,
 } from "./types";
 
 function clone<T>(value: T): T {
@@ -24,6 +27,7 @@ export class MemoryDataStore implements DataStore {
   private leads: Lead[];
   private invoices: Invoice[];
   private nudges: Nudge[];
+  private waitlist: WaitlistSignup[];
   private persist?: (snapshot: StoreSnapshot) => void;
 
   constructor(
@@ -33,6 +37,7 @@ export class MemoryDataStore implements DataStore {
     this.leads = clone(seed?.leads ?? []);
     this.invoices = clone(seed?.invoices ?? []);
     this.nudges = clone(seed?.nudges ?? []);
+    this.waitlist = [];
     this.persist = persist;
   }
 
@@ -222,6 +227,21 @@ export class MemoryDataStore implements DataStore {
       if (owner) ids.add(owner);
     }
     return [...ids];
+  }
+
+  async addWaitlistSignup(email: string): Promise<WaitlistSignupWriteResult> {
+    const normalized = parseWaitlistEmail(email);
+    const existing = this.waitlist.find((row) => row.email === normalized);
+    if (existing) {
+      return { created: false, signup: clone(existing) };
+    }
+    const signup: WaitlistSignup = {
+      id: `waitlist_${crypto.randomUUID()}`,
+      email: normalized,
+      createdAt: todayStamp(),
+    };
+    this.waitlist.push(signup);
+    return { created: true, signup: clone(signup) };
   }
 
   private findLead(userId: string, id: string): Lead | undefined {

@@ -8,6 +8,7 @@ import type {
   Nudge,
   NudgeKind,
   NudgeStatus,
+  WaitlistSignup,
 } from "./types";
 
 const NUDGE_KINDS = new Set<NudgeKind>(["follow_up", "invoice"]);
@@ -116,6 +117,22 @@ export function nudgeFromDb(row: Record<string, unknown>): Nudge {
   });
 }
 
+export function waitlistFromDb(row: Record<string, unknown>): WaitlistSignup {
+  return {
+    id: requireText(row, "id", "Waitlist row"),
+    email: requireText(row, "email", "Waitlist row"),
+    createdAt: requireText(row, "created_at", "Waitlist row"),
+  };
+}
+
+export function waitlistToDb(signup: WaitlistSignup): Record<string, unknown> {
+  return {
+    id: signup.id,
+    email: signup.email,
+    created_at: signup.createdAt,
+  };
+}
+
 export function leadToDb(lead: Lead): Record<string, unknown> {
   return {
     id: lead.id,
@@ -190,6 +207,8 @@ export const INVOICE_DB_COLUMNS = [
   "created_at",
   "user_id",
 ] as const;
+
+export const WAITLIST_DB_COLUMNS = ["id", "email", "created_at"] as const;
 
 export const NUDGE_DB_COLUMNS = [
   "id",
