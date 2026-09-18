@@ -8,8 +8,9 @@ import {
   type SheetsGateway,
 } from "./sheets-config";
 import {
+  assertOwnerColumn,
   fieldsToCells,
-  findRowIndex,
+  findOwnedRowIndex,
   INVOICE_REQUIRED_COLUMNS,
   INVOICE_TAB,
   invoiceFromRow,
@@ -26,6 +27,7 @@ import {
   type SheetTable,
   zipRow,
 } from "./sheets-map";
+import { isOwnedBy, ownerIdOf, ownedByUser, requireOwnerId } from "./owner";
 import { clipError } from "../schedule";
 import { todayStamp } from "../today";
 import type {
@@ -56,46 +58,49 @@ export class SheetsDataStore implements DataStore {
     this.gateway = new GoogleSheetsGateway(parsed.config);
   }
 
-  async listLeads(): Promise<Lead[]> {
-    return newestFirst(await this.loadLeads());
+  async listLeads(userId: string): Promise<Lead[]> {
+    return newestFirst(await this.loadLeads(userId));
   }
 
-  async listLeadsNeedingFollowUp(today: string): Promise<Lead[]> {
-    return (await this.loadLeads()).filter((lead) => leadNeedsFollowUp(lead, today));
+  async listLeadsNeedingFollowUp(userId: string, today: string): Promise<Lead[]> {
+    return (await this.loadLeads(userId)).filter((lead) => leadNeedsFollowUp(lead, today));
   }
 
-  async listInvoices(): Promise<Invoice[]> {
-    return newestFirst(await this.loadInvoices());
+  async listInvoices(userId: string): Promise<Invoice[]> {
+    return newestFirst(await this.loadInvoices(userId));
   }
 
-  async listOpenInvoices(): Promise<Invoice[]> {
-    return (await this.loadInvoices()).filter(invoiceIsOpen);
+  async listOpenInvoices(userId: string): Promise<Invoice[]> {
+    return (await this.loadInvoices(userId)).filter(invoiceIsOpen);
   }
 
-  async listOverdueInvoices(today: string): Promise<Invoice[]> {
-    return (await this.loadInvoices()).filter((invoice) => invoiceIsOverdue(invoice, today));
+  async listOverdueInvoices(userId: string, today: string): Promise<Invoice[]> {
+    return (await this.loadInvoices(userId)).filter((invoice) => invoiceIsOverdue(invoice, today));
   }
 
-  async listNudges(): Promise<Nudge[]> {
-    return newestFirst(await this.loadNudges());
+  async listNudges(userId: string): Promise<Nudge[]> {
+    return newestFirst(await this.loadNudges(userId));
   }
 
-  async getLead(id: string): Promise<Lead | null> {
-    return (await this.loadLeads()).find((lead) => lead.id === id) ?? null;
+  async getLead(userId: string, id: string): Promise<Lead | null> {
+    return (await this.loadLeads(userId)).find((lead) => lead.id === id) ?? null;
   }
 
-  async getInvoice(id: string): Promise<Invoice | null> {
-    return (await this.loadInvoices()).find((invoice) => invoice.id === id) ?? null;
+  async getInvoice(userId: string, id: string): Promise<Invoice | null> {
+    return (await this.loadInvoices(userId)).find((invoice) => invoice.id === id) ?? null;
   }
 
-  async createLead(input: LeadWrite): Promise<Lead> {
+  async createLead(userId: string, input: LeadWrite): Promise<Lead> {
+    const owner = requireOwnerId(userId);
     const table = await this.gateway.read(LEAD_TAB);
+    assertOwnerColumn(LEAD_TAB, table.headers);
     const leads = this.leadsFromTable(table);
     const lead: Lead = {
       id: nextPrefixedId(
         leads.map((row) => row.id),
         "lead",
       ),
+      userId: owner,
       name: input.name,
       email: input.email,
       status: input.status,
@@ -106,9 +111,9 @@ export class SheetsDataStore implements DataStore {
     return lead;
   }
 
-  async updateLead(id: string, input: LeadWrite): Promise<Lead> {
+  async updateLead(userId: string, id: string, input: LeadWrite): Promise<Lead> {
     const table = await this.gateway.read(LEAD_TAB);
-    const { index, row: existing } = this.requireRow(LEAD_TAB, table, id);
+    const { index, row: existing } = this.requireOwnedRow(LEAD_TAB, table, id, userId);
     const lead = leadFromRow(existing);
     applyLeadWrite(lead, input);
     await this.gateway.updateRow(
@@ -119,21 +124,24 @@ export class SheetsDataStore implements DataStore {
     return lead;
   }
 
-  async deleteLead(id: string): Promise<void> {
+  async deleteLead(userId: string, id: string): Promise<void> {
     const table = await this.gateway.read(LEAD_TAB);
-    const { index } = this.requireRow(LEAD_TAB, table, id);
+    const { index } = this.requireOwnedRow(LEAD_TAB, table, id, userId);
     await this.gateway.deleteRow(LEAD_TAB, index);
-    await this.deleteRelatedDraftNudges(id);
+    await this.deleteRelatedDraftNudges(id, userId);
   }
 
-  async createInvoice(input: InvoiceWrite): Promise<Invoice> {
+  async createInvoice(userId: string, input: InvoiceWrite): Promise<Invoice> {
+    const owner = requireOwnerId(userId);
     const table = await this.gateway.read(INVOICE_TAB);
+    assertOwnerColumn(INVOICE_TAB, table.headers);
     const invoices = this.invoicesFromTable(table);
     const invoice: Invoice = {
       id: nextPrefixedId(
         invoices.map((row) => row.id),
         "inv",
       ),
+      userId: owner,
       clientName: input.clientName,
       clientEmail: input.clientEmail,
       invoiceNumber: input.invoiceNumber,
@@ -150,9 +158,9 @@ export class SheetsDataStore implements DataStore {
     return invoice;
   }
 
-  async updateInvoice(id: string, input: InvoiceWrite): Promise<Invoice> {
+  async updateInvoice(userId: string, id: string, input: InvoiceWrite): Promise<Invoice> {
     const table = await this.gateway.read(INVOICE_TAB);
-    const { index, row: existing } = this.requireRow(INVOICE_TAB, table, id);
+    const { index, row: existing } = this.requireOwnedRow(INVOICE_TAB, table, id, userId);
     const invoice = invoiceFromRow(existing);
     applyInvoiceWrite(invoice, input);
     await this.gateway.updateRow(
@@ -163,26 +171,33 @@ export class SheetsDataStore implements DataStore {
     return invoice;
   }
 
-  async deleteInvoice(id: string): Promise<void> {
+  async deleteInvoice(userId: string, id: string): Promise<void> {
     const table = await this.gateway.read(INVOICE_TAB);
-    const { index } = this.requireRow(INVOICE_TAB, table, id);
+    const { index } = this.requireOwnedRow(INVOICE_TAB, table, id, userId);
     await this.gateway.deleteRow(INVOICE_TAB, index);
-    await this.deleteRelatedDraftNudges(id);
+    await this.deleteRelatedDraftNudges(id, userId);
   }
 
-  async createNudgeDraft(input: {
-    kind: NudgeKind;
-    relatedId: string;
-    draftText: string;
-    scheduledFor?: string;
-  }): Promise<Nudge> {
+  async createNudgeDraft(
+    userId: string,
+    input: {
+      kind: NudgeKind;
+      relatedId: string;
+      draftText: string;
+      scheduledFor?: string;
+    },
+  ): Promise<Nudge> {
+    const owner = requireOwnerId(userId);
+    await this.requireRelatedRecord(owner, input.kind, input.relatedId);
     const table = await this.gateway.read(NUDGE_TAB);
+    assertOwnerColumn(NUDGE_TAB, table.headers);
     const nudges = this.nudgesFromTable(table);
     const nudge: Nudge = {
       id: nextPrefixedId(
         nudges.map((row) => row.id),
         "nudge",
       ),
+      userId: owner,
       kind: input.kind,
       relatedId: input.relatedId,
       channel: "email",
@@ -195,9 +210,9 @@ export class SheetsDataStore implements DataStore {
     return nudge;
   }
 
-  async updateNudgeDraft(id: string, input: NudgeDraftWrite): Promise<Nudge> {
+  async updateNudgeDraft(userId: string, id: string, input: NudgeDraftWrite): Promise<Nudge> {
     const table = await this.gateway.read(NUDGE_TAB);
-    const { index, row } = this.requireRow(NUDGE_TAB, table, id);
+    const { index, row } = this.requireOwnedRow(NUDGE_TAB, table, id, userId);
     const nudge = nudgeFromRow(row);
     if (nudge.status !== "draft") {
       throw new Error(`Nudge ${id} is ${nudge.status}, not a draft`);
@@ -211,9 +226,9 @@ export class SheetsDataStore implements DataStore {
     return nudge;
   }
 
-  async recordNudgeSendFailure(id: string, error: string): Promise<void> {
+  async recordNudgeSendFailure(userId: string, id: string, error: string): Promise<void> {
     const table = await this.gateway.read(NUDGE_TAB);
-    const { index, row } = this.requireRow(NUDGE_TAB, table, id);
+    const { index, row } = this.requireOwnedRow(NUDGE_TAB, table, id, userId);
     const nudge = nudgeFromRow(row);
     if (nudge.status !== "draft") return;
     nudge.lastError = clipError(error);
@@ -225,9 +240,10 @@ export class SheetsDataStore implements DataStore {
     );
   }
 
-  async markNudgeSent(id: string, sentAt: string): Promise<void> {
+  async markNudgeSent(userId: string, id: string, sentAt: string): Promise<void> {
+    const owner = requireOwnerId(userId);
     const table = await this.gateway.read(NUDGE_TAB);
-    const { index, row } = this.requireRow(NUDGE_TAB, table, id);
+    const { index, row } = this.requireOwnedRow(NUDGE_TAB, table, id, owner);
     const nudge = nudgeFromRow(row);
     nudge.status = "sent";
     nudge.sentAt = sentAt;
@@ -240,16 +256,16 @@ export class SheetsDataStore implements DataStore {
     );
 
     if (nudge.kind === "invoice") {
-      await this.patchInvoice(nudge.relatedId, { lastNudgedAt: sentAt });
+      await this.patchInvoice(owner, nudge.relatedId, { lastNudgedAt: sentAt });
     }
     if (nudge.kind === "follow_up") {
-      await this.patchLead(nudge.relatedId, { lastContactAt: sentAt });
+      await this.patchLead(owner, nudge.relatedId, { lastContactAt: sentAt });
     }
   }
 
-  async markNudgeSkipped(id: string): Promise<void> {
+  async markNudgeSkipped(userId: string, id: string): Promise<void> {
     const table = await this.gateway.read(NUDGE_TAB);
-    const { index, row } = this.requireRow(NUDGE_TAB, table, id);
+    const { index, row } = this.requireOwnedRow(NUDGE_TAB, table, id, userId);
     const nudge = nudgeFromRow(row);
     nudge.status = "skipped";
     await this.gateway.updateRow(
@@ -259,16 +275,26 @@ export class SheetsDataStore implements DataStore {
     );
   }
 
-  private async loadLeads(): Promise<Lead[]> {
-    return this.leadsFromTable(await this.gateway.read(LEAD_TAB));
+  async listNudgeOwnerIds(): Promise<string[]> {
+    const nudges = this.nudgesFromTable(await this.gateway.read(NUDGE_TAB));
+    const ids = new Set<string>();
+    for (const nudge of nudges) {
+      const owner = ownerIdOf(nudge.userId);
+      if (owner) ids.add(owner);
+    }
+    return [...ids];
   }
 
-  private async loadInvoices(): Promise<Invoice[]> {
-    return this.invoicesFromTable(await this.gateway.read(INVOICE_TAB));
+  private async loadLeads(userId: string): Promise<Lead[]> {
+    return ownedByUser(this.leadsFromTable(await this.gateway.read(LEAD_TAB)), userId);
   }
 
-  private async loadNudges(): Promise<Nudge[]> {
-    return this.nudgesFromTable(await this.gateway.read(NUDGE_TAB));
+  private async loadInvoices(userId: string): Promise<Invoice[]> {
+    return ownedByUser(this.invoicesFromTable(await this.gateway.read(INVOICE_TAB)), userId);
+  }
+
+  private async loadNudges(userId: string): Promise<Nudge[]> {
+    return ownedByUser(this.nudgesFromTable(await this.gateway.read(NUDGE_TAB)), userId);
   }
 
   private leadsFromTable(table: SheetTable): Lead[] {
@@ -283,21 +309,41 @@ export class SheetsDataStore implements DataStore {
     return parseTableRows(NUDGE_TAB, table, NUDGE_REQUIRED_COLUMNS, nudgeFromRow);
   }
 
-  private requireRow(tab: string, table: SheetTable, id: string) {
-    const index = findRowIndex(table.headers, table.rows, id);
+  private requireOwnedRow(tab: string, table: SheetTable, id: string, userId: string) {
+    const owner = requireOwnerId(userId);
+    const index = findOwnedRowIndex(table.headers, table.rows, id, owner);
     if (index < 0) {
       const kind = tab === LEAD_TAB ? "lead" : tab === INVOICE_TAB ? "invoice" : "nudge";
       throw new Error(`No ${kind} with id ${id}`);
     }
     const row = zipRow(table.headers, table.rows[index] ?? []);
+    if (!isOwnedBy(owner, ownerIdOf(row.user_id))) {
+      const kind = tab === LEAD_TAB ? "lead" : tab === INVOICE_TAB ? "invoice" : "nudge";
+      throw new Error(`No ${kind} with id ${id}`);
+    }
     return { index, row };
   }
 
-  private async patchLead(id: string, patch: Partial<Lead>): Promise<void> {
+  private async requireRelatedRecord(
+    userId: string,
+    kind: NudgeKind,
+    relatedId: string,
+  ): Promise<void> {
+    if (kind === "follow_up") {
+      const lead = await this.getLead(userId, relatedId);
+      if (!lead) throw new Error(`No lead with id ${relatedId}`);
+      return;
+    }
+    const invoice = await this.getInvoice(userId, relatedId);
+    if (!invoice) throw new Error(`No invoice with id ${relatedId}`);
+  }
+
+  private async patchLead(userId: string, id: string, patch: Partial<Lead>): Promise<void> {
     const table = await this.gateway.read(LEAD_TAB);
-    const index = findRowIndex(table.headers, table.rows, id);
+    const index = findOwnedRowIndex(table.headers, table.rows, id, requireOwnerId(userId));
     if (index < 0) return;
     const current = leadFromRow(zipRow(table.headers, table.rows[index] ?? []));
+    if (!isOwnedBy(userId, current.userId)) return;
     const lead = { ...current, ...patch };
     await this.gateway.updateRow(
       LEAD_TAB,
@@ -306,11 +352,12 @@ export class SheetsDataStore implements DataStore {
     );
   }
 
-  private async patchInvoice(id: string, patch: Partial<Invoice>): Promise<void> {
+  private async patchInvoice(userId: string, id: string, patch: Partial<Invoice>): Promise<void> {
     const table = await this.gateway.read(INVOICE_TAB);
-    const index = findRowIndex(table.headers, table.rows, id);
+    const index = findOwnedRowIndex(table.headers, table.rows, id, requireOwnerId(userId));
     if (index < 0) return;
     const current = invoiceFromRow(zipRow(table.headers, table.rows[index] ?? []));
+    if (!isOwnedBy(userId, current.userId)) return;
     const invoice = { ...current, ...patch };
     await this.gateway.updateRow(
       INVOICE_TAB,
@@ -320,13 +367,18 @@ export class SheetsDataStore implements DataStore {
   }
 
   /** Drop draft nudges for a deleted lead/invoice so Recent nudges can't send to a missing row. */
-  private async deleteRelatedDraftNudges(relatedId: string): Promise<void> {
+  private async deleteRelatedDraftNudges(relatedId: string, userId: string): Promise<void> {
+    const owner = requireOwnerId(userId);
     const table = await this.gateway.read(NUDGE_TAB);
     const indexes: number[] = [];
     for (let i = 0; i < table.rows.length; i += 1) {
       const row = zipRow(table.headers, table.rows[i] ?? []);
       if (!row.id?.trim()) continue;
-      if (row.related_id === relatedId && row.status === "draft") {
+      if (
+        row.related_id === relatedId &&
+        row.status === "draft" &&
+        isOwnedBy(owner, ownerIdOf(row.user_id))
+      ) {
         indexes.push(i);
       }
     }

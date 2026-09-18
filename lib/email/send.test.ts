@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { MemoryDataStore } from "../data/memory-store";
-import { fixtureInvoices, fixtureLeads } from "../data/test-fixtures";
+import { FIXTURE_USER_ID, fixtureInvoices, fixtureLeads } from "../data/test-fixtures";
 import { MISSING_API_KEY, MISSING_FROM_EMAIL, readResendConfig } from "./config";
 import { deliverNudgeDraft, nudgeIdempotencyKey } from "./deliver";
 import { sendNudgeEmail, type EmailClient } from "./send";
 import { nudgeEmailHtml, nudgeEmailText, nudgeSubject } from "./templates";
+
+const OWNER = FIXTURE_USER_ID;
 
 const env = {
   RESEND_API_KEY: "re_test_not_a_real_key",
@@ -172,75 +174,75 @@ describe("deliverNudgeDraft", () => {
 
   it("marks the nudge sent only after Resend succeeds", async () => {
     const store = storeWithDraft();
-    const draft = await store.createNudgeDraft({
+    const draft = await store.createNudgeDraft(OWNER, {
       kind: "follow_up",
       relatedId: "lead_001",
       draftText: "Hey Sam — just checking in.",
     });
-    const result = await deliverNudgeDraft(store, draft, "2026-09-15", {
+    const result = await deliverNudgeDraft(store, OWNER, draft, "2026-09-15", {
       env,
       client: mockClient({ data: { id: "email_ok" }, error: null }),
     });
     assert.equal(result.ok, true);
-    const after = (await store.listNudges()).find((row) => row.id === draft.id);
+    const after = (await store.listNudges(OWNER)).find((row) => row.id === draft.id);
     assert.equal(after?.status, "sent");
     assert.equal(after?.sentAt, "2026-09-15");
-    assert.equal((await store.getLead("lead_001"))?.lastContactAt, "2026-09-15");
+    assert.equal((await store.getLead(OWNER, "lead_001"))?.lastContactAt, "2026-09-15");
   });
 
   it("keeps the draft when Resend fails", async () => {
     const store = storeWithDraft();
-    const draft = await store.createNudgeDraft({
+    const draft = await store.createNudgeDraft(OWNER, {
       kind: "invoice",
       relatedId: "inv_001",
       draftText: "Hi Sam — reminder.",
     });
-    const result = await deliverNudgeDraft(store, draft, "2026-09-15", {
+    const result = await deliverNudgeDraft(store, OWNER, draft, "2026-09-15", {
       env,
       client: mockClient({ data: null, error: { message: "rate limited" } }),
     });
     assert.equal(result.ok, false);
-    const after = (await store.listNudges()).find((row) => row.id === draft.id);
+    const after = (await store.listNudges(OWNER)).find((row) => row.id === draft.id);
     assert.equal(after?.status, "draft");
     assert.equal(after?.sentAt, undefined);
-    assert.equal((await store.getInvoice("inv_001"))?.lastNudgedAt, "2026-09-10");
+    assert.equal((await store.getInvoice(OWNER, "inv_001"))?.lastNudgedAt, "2026-09-10");
   });
 
   it("keeps the draft when the API key is missing", async () => {
     const store = storeWithDraft();
-    const draft = await store.createNudgeDraft({
+    const draft = await store.createNudgeDraft(OWNER, {
       kind: "follow_up",
       relatedId: "lead_002",
       draftText: "Hey Jordan.",
     });
-    const result = await deliverNudgeDraft(store, draft, "2026-09-15", { env: {} });
+    const result = await deliverNudgeDraft(store, OWNER, draft, "2026-09-15", { env: {} });
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.error, MISSING_API_KEY);
-    const after = (await store.listNudges()).find((row) => row.id === draft.id);
+    const after = (await store.listNudges(OWNER)).find((row) => row.id === draft.id);
     assert.equal(after?.status, "draft");
   });
 
   it("keys Resend idempotency on payload so an edited draft can send after a prior attempt", async () => {
     const store = storeWithDraft();
-    const draft = await store.createNudgeDraft({
+    const draft = await store.createNudgeDraft(OWNER, {
       kind: "follow_up",
       relatedId: "lead_001",
       draftText: "Hey Sam — first try.",
     });
     const firstCalls: unknown[] = [];
-    const first = await deliverNudgeDraft(store, draft, "2026-09-15", {
+    const first = await deliverNudgeDraft(store, OWNER, draft, "2026-09-15", {
       env,
       client: mockClient({ data: null, error: { message: "rate limited" } }, firstCalls),
     });
     assert.equal(first.ok, false);
-    const afterFail = (await store.listNudges()).find((row) => row.id === draft.id);
+    const afterFail = (await store.listNudges(OWNER)).find((row) => row.id === draft.id);
     assert.equal(afterFail?.status, "draft");
 
-    const edited = await store.updateNudgeDraft(draft.id, {
+    const edited = await store.updateNudgeDraft(OWNER, draft.id, {
       draftText: "Hey Sam — rewritten.",
     });
     const secondCalls: unknown[] = [];
-    const second = await deliverNudgeDraft(store, edited, "2026-09-15", {
+    const second = await deliverNudgeDraft(store, OWNER, edited, "2026-09-15", {
       env,
       client: mockClient({ data: { id: "email_ok" }, error: null }, secondCalls),
     });
@@ -256,23 +258,23 @@ describe("deliverNudgeDraft", () => {
       nudgeIdempotencyKey(draft.id, "sam@example.com", "Quick check-in", edited.draftText),
     );
 
-    const after = (await store.listNudges()).find((row) => row.id === draft.id);
+    const after = (await store.listNudges(OWNER)).find((row) => row.id === draft.id);
     assert.equal(after?.status, "sent");
     assert.equal(after?.sentAt, "2026-09-15");
   });
 
   it("reuses the same idempotency key for an identical retry (double-click / cron)", async () => {
     const store = storeWithDraft();
-    const draft = await store.createNudgeDraft({
+    const draft = await store.createNudgeDraft(OWNER, {
       kind: "invoice",
       relatedId: "inv_001",
       draftText: "Hi Sam — reminder.",
     });
     const calls: unknown[] = [];
     const failing = mockClient({ data: null, error: { message: "rate limited" } }, calls);
-    await deliverNudgeDraft(store, draft, "2026-09-15", { env, client: failing });
-    const stillDraft = (await store.listNudges()).find((row) => row.id === draft.id);
-    await deliverNudgeDraft(store, stillDraft!, "2026-09-15", { env, client: failing });
+    await deliverNudgeDraft(store, OWNER, draft, "2026-09-15", { env, client: failing });
+    const stillDraft = (await store.listNudges(OWNER)).find((row) => row.id === draft.id);
+    await deliverNudgeDraft(store, OWNER, stillDraft!, "2026-09-15", { env, client: failing });
     assert.equal(calls.length, 2);
     const keys = calls.map(
       (call) => (call as { options: { idempotencyKey: string } }).options.idempotencyKey,
@@ -282,21 +284,21 @@ describe("deliverNudgeDraft", () => {
       keys[0],
       nudgeIdempotencyKey(draft.id, "sam@example.com", "Invoice reminder", draft.draftText),
     );
-    const after = (await store.listNudges()).find((row) => row.id === draft.id);
+    const after = (await store.listNudges(OWNER)).find((row) => row.id === draft.id);
     assert.equal(after?.status, "draft");
   });
 
   it("does not call Resend again when the nudge is already sent", async () => {
     const store = storeWithDraft();
-    const draft = await store.createNudgeDraft({
+    const draft = await store.createNudgeDraft(OWNER, {
       kind: "follow_up",
       relatedId: "lead_001",
       draftText: "Hey Sam.",
     });
-    await store.markNudgeSent(draft.id, "2026-09-15");
-    const sent = (await store.listNudges()).find((row) => row.id === draft.id);
+    await store.markNudgeSent(OWNER, draft.id, "2026-09-15");
+    const sent = (await store.listNudges(OWNER)).find((row) => row.id === draft.id);
     const calls: unknown[] = [];
-    const result = await deliverNudgeDraft(store, sent!, "2026-09-16", {
+    const result = await deliverNudgeDraft(store, OWNER, sent!, "2026-09-16", {
       env,
       client: mockClient({ data: { id: "should-not-run" }, error: null }, calls),
     });

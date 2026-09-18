@@ -1,1 +1,1 @@
-id,client_name,client_email,invoice_number,amount_usd,status,due_date,last_nudged_at,payment_link,created_at
+id,client_name,client_email,invoice_number,amount_usd,status,due_date,last_nudged_at,payment_link,created_at,user_id

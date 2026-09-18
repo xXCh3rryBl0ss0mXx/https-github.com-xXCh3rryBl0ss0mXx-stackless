@@ -29,10 +29,11 @@ export type RecipientResult =
 
 export async function recipientForNudge(
   store: DataStore,
+  userId: string,
   nudge: Nudge,
 ): Promise<RecipientResult> {
   if (nudge.kind === "follow_up") {
-    const lead = await store.getLead(nudge.relatedId);
+    const lead = await store.getLead(userId, nudge.relatedId);
     if (!lead) {
       return { ok: false, error: "Can’t find that person anymore." };
     }
@@ -42,7 +43,7 @@ export async function recipientForNudge(
     return { ok: true, email: lead.email };
   }
 
-  const invoice = await store.getInvoice(nudge.relatedId);
+  const invoice = await store.getInvoice(userId, nudge.relatedId);
   if (!invoice) {
     return { ok: false, error: "Can’t find that invoice anymore." };
   }
@@ -60,6 +61,7 @@ export async function recipientForNudge(
  */
 export async function deliverNudgeDraft(
   store: DataStore,
+  userId: string,
   nudge: Nudge,
   sentAt: string,
   deps: SendNudgeDeps = {},
@@ -68,7 +70,7 @@ export async function deliverNudgeDraft(
     return { ok: true, id: "already-sent" };
   }
 
-  const recipient = await recipientForNudge(store, nudge);
+  const recipient = await recipientForNudge(store, userId, nudge);
   if (!recipient.ok) return recipient;
 
   const sent = await sendNudgeEmail(
@@ -87,6 +89,6 @@ export async function deliverNudgeDraft(
   );
   if (!sent.ok) return sent;
 
-  await store.markNudgeSent(nudge.id, sentAt);
+  await store.markNudgeSent(userId, nudge.id, sentAt);
   return sent;
 }

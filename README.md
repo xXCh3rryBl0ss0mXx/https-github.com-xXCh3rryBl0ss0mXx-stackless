@@ -136,7 +136,7 @@ Neon’s `nudge_log` table includes `last_error` and `send_attempts` (see [`data
 
 Leave `STACKLESS_DATA_STORE=memory` for local and CI until a database is connected. The site **builds** without `DATABASE_URL`. Setting `STACKLESS_DATA_STORE=neon` (or `postgres`) without `DATABASE_URL` shows a peach error on `/app` (no sample keys).
 
-App code still talks only to `DataStore` in `lib/data/types.ts`. `NeonDataStore` is the production implementation (`lib/data/neon-store.ts`), using `@neondatabase/serverless` over HTTP — Vercel-friendly, no Google Cloud.
+App code still talks only to `DataStore` in `lib/data/types.ts`. `NeonDataStore` is the production implementation (`lib/data/neon-store.ts`), using `@neondatabase/serverless` over HTTP — Vercel-friendly, no Google Cloud. Each row is owned by the signed-in Clerk user id; legacy rows with a blank `user_id` stay in Postgres but are not listed, edited, or auto-sent.
 
 #### 1. Create a free Neon project (Michael)
 

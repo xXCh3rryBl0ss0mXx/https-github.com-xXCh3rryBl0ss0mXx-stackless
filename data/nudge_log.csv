@@ -1,1 +1,1 @@
-id,kind,related_id,channel,draft_text,status,scheduled_for,sent_at,created_at,last_error,send_attempts
+id,kind,related_id,channel,draft_text,status,scheduled_for,sent_at,created_at,last_error,send_attempts,user_id

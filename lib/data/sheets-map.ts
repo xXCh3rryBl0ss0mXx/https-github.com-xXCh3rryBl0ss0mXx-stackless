@@ -1,3 +1,4 @@
+import { ownerIdOf } from "./owner";
 import type {
   Invoice,
   InvoiceStatus,
@@ -22,6 +23,7 @@ export const LEAD_COLUMNS = [
   "next_follow_up_at",
   "notes",
   "created_at",
+  "user_id",
 ] as const;
 
 export const INVOICE_COLUMNS = [
@@ -35,6 +37,7 @@ export const INVOICE_COLUMNS = [
   "last_nudged_at",
   "payment_link",
   "created_at",
+  "user_id",
 ] as const;
 
 export const NUDGE_COLUMNS = [
@@ -49,6 +52,7 @@ export const NUDGE_COLUMNS = [
   "created_at",
   "last_error",
   "send_attempts",
+  "user_id",
 ] as const;
 
 export const LEAD_REQUIRED_COLUMNS = ["id", "name", "email", "status", "created_at"] as const;
@@ -168,6 +172,7 @@ function omitUndefined<T extends object>(value: T): T {
 export function leadFromRow(row: Record<string, string>): Lead {
   return omitUndefined({
     id: requireCell(row, "id", "Lead row"),
+    userId: ownerIdOf(row.user_id),
     name: requireCell(row, "name", "Lead row"),
     email: requireCell(row, "email", "Lead row"),
     company: blankToUndef(row.company),
@@ -187,6 +192,7 @@ export function invoiceFromRow(row: Record<string, string>): Invoice {
   }
   return omitUndefined({
     id: requireCell(row, "id", "Invoice row"),
+    userId: ownerIdOf(row.user_id),
     clientName: requireCell(row, "client_name", "Invoice row"),
     clientEmail: requireCell(row, "client_email", "Invoice row"),
     invoiceNumber: requireCell(row, "invoice_number", "Invoice row"),
@@ -210,6 +216,7 @@ export function nudgeFromRow(row: Record<string, string>): Nudge {
   }
   return omitUndefined({
     id: requireCell(row, "id", "Nudge row"),
+    userId: ownerIdOf(row.user_id),
     kind,
     relatedId: requireCell(row, "related_id", "Nudge row"),
     channel: "email" as const,
@@ -234,6 +241,7 @@ export function leadToFields(lead: Lead): Record<string, string> {
     next_follow_up_at: lead.nextFollowUpAt ?? "",
     notes: lead.notes ?? "",
     created_at: lead.createdAt,
+    user_id: lead.userId ?? "",
   };
 }
 
@@ -249,6 +257,7 @@ export function invoiceToFields(invoice: Invoice): Record<string, string> {
     last_nudged_at: invoice.lastNudgedAt ?? "",
     payment_link: invoice.paymentLink ?? "",
     created_at: invoice.createdAt,
+    user_id: invoice.userId ?? "",
   };
 }
 
@@ -265,6 +274,7 @@ export function nudgeToFields(nudge: Nudge): Record<string, string> {
     created_at: nudge.createdAt,
     last_error: nudge.lastError ?? "",
     send_attempts: nudge.sendAttempts != null ? String(nudge.sendAttempts) : "",
+    user_id: nudge.userId ?? "",
   };
 }
 
@@ -284,10 +294,31 @@ export function parseTableRows<T>(
   return records;
 }
 
-export function findRowIndex(headers: string[], rows: string[][], id: string): number {
+export function findOwnedRowIndex(
+  headers: string[],
+  rows: string[][],
+  id: string,
+  userId: string,
+): number {
   const idCol = headers.findIndex((header) => header.trim() === "id");
+  const userCol = headers.findIndex((header) => header.trim() === "user_id");
   if (idCol < 0) {
     throw new Error('Sheet is missing an "id" column.');
   }
-  return rows.findIndex((cells) => (cells[idCol] ?? "").trim() === id);
+  if (userCol < 0) return -1;
+  const owner = userId.trim();
+  if (!owner) return -1;
+  return rows.findIndex(
+    (cells) =>
+      (cells[idCol] ?? "").trim() === id && (cells[userCol] ?? "").trim() === owner,
+  );
+}
+
+export function assertOwnerColumn(tab: string, headers: string[]): void {
+  const present = headers.some((header) => header.trim() === "user_id");
+  if (!present) {
+    throw new Error(
+      `Google Sheet tab "${tab}" is missing column "user_id". Add it so each row stays private to one Clerk user.`,
+    );
+  }
 }

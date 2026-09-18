@@ -54,6 +54,7 @@ Leave `STACKLESS_DATA_STORE=memory` if you have not connected Neon or Sheets yet
 | next_follow_up_at | when to nudge next |
 | notes | free text |
 | created_at | when the lead was added |
+| user_id | Clerk user id that owns the row. Blank = unowned legacy; never shown to signed-in users |
 
 ### invoices — money owed / paid
 | column | meaning |
@@ -68,6 +69,7 @@ Leave `STACKLESS_DATA_STORE=memory` if you have not connected Neon or Sheets yet
 | last_nudged_at | last reminder sent |
 | payment_link | optional URL |
 | created_at | when created |
+| user_id | Clerk user id that owns the row. Blank = unowned legacy; never shown to signed-in users |
 
 ### nudge_log — drafts + sent reminders
 | column | meaning |
@@ -83,7 +85,8 @@ Leave `STACKLESS_DATA_STORE=memory` if you have not connected Neon or Sheets yet
 | created_at | when the row was made |
 | last_error | last auto-send error (optional; cron writes this on failure) |
 | send_attempts | failed auto-send count (optional; cron stops after 5) |
+| user_id | Clerk user id that owns the row. Blank = unowned legacy; cron will not send it |
 
 ## Thin adapter
 
-App code only calls `DataStore` functions in `lib/data/types.ts` — never SQL or Google Sheets column letters. `MemoryDataStore`, `NeonDataStore`, and `SheetsDataStore` all implement the same create/update/delete methods for leads and invoices, and persist `scheduledFor` on nudge create **and** update (plus `last_error` / `send_attempts` on failed auto-sends). Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. Neon is the production store; swapping stores does not change `/app`.
+App code only calls `DataStore` functions in `lib/data/types.ts` — never SQL or Google Sheets column letters. Every read/update/delete takes the signed-in Clerk user id; creates stamp that id. Unowned legacy rows stay in the database but are not listed, edited, deleted, or auto-sent. `MemoryDataStore`, `NeonDataStore`, and `SheetsDataStore` all implement the same create/update/delete methods for leads and invoices, and persist `scheduledFor` on nudge create **and** update (plus `last_error` / `send_attempts` on failed auto-sends). Deleting a lead or invoice also removes **draft** nudges for that row (`related_id` + `status=draft`) so Today’s List / Recent nudges never tries to send against a missing person or invoice. Sent and skipped nudge rows stay as history. Neon is the production store; swapping stores does not change `/app`.
