@@ -93,6 +93,39 @@ export async function assertTenantIsolation(store: DataStore): Promise<void> {
   );
 }
 
+/** Waitlist emails are a public list, not another user's person. */
+export async function assertWaitlistIdempotentAndIsolated(store: DataStore): Promise<void> {
+  const first = await store.addWaitlistSignup("  Alex@Studio.com ");
+  assert.equal(first.created, true);
+  assert.equal(first.signup.email, "alex@studio.com");
+
+  const second = await store.addWaitlistSignup("alex@studio.com");
+  assert.equal(second.created, false);
+  assert.equal(second.signup.id, first.signup.id);
+  assert.equal(second.signup.email, "alex@studio.com");
+
+  const third = await store.addWaitlistSignup("ALEX@STUDIO.COM");
+  assert.equal(third.created, false);
+  assert.equal(third.signup.id, first.signup.id);
+
+  const personA = await store.createLead(USER_A, leadWrite);
+  const leadsA = await store.listLeads(USER_A);
+  const leadsB = await store.listLeads(USER_B);
+  assert.equal(
+    leadsA.some((lead) => lead.email === "alex@studio.com"),
+    false,
+  );
+  assert.equal(
+    leadsB.some((lead) => lead.email === "alex@studio.com"),
+    false,
+  );
+  assert.equal(
+    leadsA.some((lead) => lead.id === personA.id),
+    true,
+  );
+  assert.deepEqual(leadsB, []);
+}
+
 export async function assertUnownedRowsHidden(
   store: DataStore,
   unownedLeadId: string,

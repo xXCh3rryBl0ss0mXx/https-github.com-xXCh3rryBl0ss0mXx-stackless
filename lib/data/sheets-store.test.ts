@@ -6,11 +6,15 @@ import {
   LEAD_COLUMNS,
   NUDGE_COLUMNS,
   type SheetTable,
+  invoiceToFields,
+  leadToFields,
+  nudgeToFields,
+  fieldsToCells,
 } from "./sheets-map";
 import { SheetsDataStore } from "./sheets-store";
 import { assertTenantIsolation, assertUnownedRowsHidden } from "./tenant-isolation";
 import { FIXTURE_USER_ID, fixtureInvoices, fixtureLeads, fixtureNudges } from "./test-fixtures";
-import { invoiceToFields, leadToFields, nudgeToFields, fieldsToCells } from "./sheets-map";
+import { SHEETS_WAITLIST_UNSUPPORTED } from "./waitlist";
 
 const OWNER = FIXTURE_USER_ID;
 
@@ -373,5 +377,12 @@ describe("SheetsDataStore", () => {
       (await gateway.read("leads")).rows.some((row) => row[0] === "lead_legacy"),
       true,
     );
+  });
+
+  it("does not claim a waitlist email was saved", async () => {
+    const store = new SheetsDataStore({ gateway: seededGateway() });
+    await assert.rejects(() => store.addWaitlistSignup("alex@studio.com"), {
+      message: SHEETS_WAITLIST_UNSUPPORTED,
+    });
   });
 });

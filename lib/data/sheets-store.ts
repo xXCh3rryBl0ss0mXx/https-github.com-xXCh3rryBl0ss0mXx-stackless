@@ -39,7 +39,9 @@ import type {
   Nudge,
   NudgeDraftWrite,
   NudgeKind,
+  WaitlistSignupWriteResult,
 } from "./types";
+import { SHEETS_WAITLIST_UNSUPPORTED } from "./waitlist";
 
 export { MISSING_SHEETS_CREDS };
 
@@ -283,6 +285,11 @@ export class SheetsDataStore implements DataStore {
       if (owner) ids.add(owner);
     }
     return [...ids];
+  }
+
+  async addWaitlistSignup(email: string): Promise<WaitlistSignupWriteResult> {
+    void email;
+    throw new Error(SHEETS_WAITLIST_UNSUPPORTED);
   }
 
   private async loadLeads(userId: string): Promise<Lead[]> {

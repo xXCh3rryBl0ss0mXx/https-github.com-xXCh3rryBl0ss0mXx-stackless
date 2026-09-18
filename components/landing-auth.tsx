@@ -1,38 +1,10 @@
 "use client";
 
-import { useAuth, useClerk } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { StacklessUserButton } from "@/components/stackless-user-button";
 import { isClerkConfigured } from "@/lib/clerk";
 import { CLERK_SIGN_IN_PATH, CLERK_SIGN_UP_PATH } from "@/lib/clerk-paths";
-
-const WAITLIST_AFTER_JOIN = "/waitlist?joined=1";
-
-function WaitlistTrigger({
-  className,
-  children,
-  id,
-}: {
-  className: string;
-  children: ReactNode;
-  id?: string;
-}) {
-  const clerk = useClerk();
-
-  return (
-    <button
-      id={id}
-      type="button"
-      className={className}
-      onClick={() => {
-        clerk.openWaitlist({ afterJoinWaitlistUrl: WAITLIST_AFTER_JOIN });
-      }}
-    >
-      {children}
-    </button>
-  );
-}
 
 function TodaysListChip({ className }: { className: string }) {
   return (
@@ -129,17 +101,9 @@ export function EarlyAccessButton({
   className: string;
   id?: string;
 }) {
-  if (!isClerkConfigured()) {
-    return (
-      <Link id={id} className={className} href="/waitlist">
-        Get early access
-      </Link>
-    );
-  }
-
   return (
-    <WaitlistTrigger className={className} id={id}>
+    <Link id={id} className={className} href="/waitlist">
       Get early access
-    </WaitlistTrigger>
+    </Link>
   );
 }

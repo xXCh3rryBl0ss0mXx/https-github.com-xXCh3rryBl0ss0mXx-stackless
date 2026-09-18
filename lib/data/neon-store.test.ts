@@ -11,14 +11,14 @@ import { invoiceToDb, leadToDb, nudgeToDb } from "./neon-map";
 import { SCHEMA_SQL, SCHEMA_STATEMENTS } from "./neon-schema";
 import type { SqlClient, SqlQueryResult } from "./neon-sql";
 import { NeonDataStore } from "./neon-store";
-import { assertTenantIsolation, assertUnownedRowsHidden } from "./tenant-isolation";
+import { assertTenantIsolation, assertUnownedRowsHidden, assertWaitlistIdempotentAndIsolated } from "./tenant-isolation";
 import { FIXTURE_USER_ID, fixtureInvoices, fixtureLeads, fixtureNudges } from "./test-fixtures";
 
 const OWNER = FIXTURE_USER_ID;
 
 type Row = Record<string, unknown>;
 
-const TABLES = ["leads", "invoices", "nudge_log"] as const;
+const TABLES = ["leads", "invoices", "nudge_log", "waitlist_signups"] as const;
 type TableName = (typeof TABLES)[number];
 
 function normalizeSql(text: string): string {
@@ -35,6 +35,7 @@ class FakeSqlClient implements SqlClient {
     leads: [],
     invoices: [],
     nudge_log: [],
+    waitlist_signups: [],
   };
 
   async query<T = Record<string, unknown>>(
@@ -46,7 +47,10 @@ class FakeSqlClient implements SqlClient {
       return { rows: [] };
     }
 
-    const insert = /^INSERT INTO (\w+) \((.+)\) VALUES \((.+)\)$/i.exec(sql);
+    const insert =
+      /^INSERT INTO (\w+) \(([^)]+)\) VALUES \(([^)]+)\)(?: ON CONFLICT \((\w+)\) DO NOTHING)?(?: RETURNING .+)?$/i.exec(
+        sql,
+      );
     if (insert) {
       const table = this.table(insert[1]);
       const columns = splitList(insert[2]);
@@ -55,6 +59,15 @@ class FakeSqlClient implements SqlClient {
       columns.forEach((column, index) => {
         row[column] = values[index] ?? null;
       });
+      const conflictColumn = insert[4];
+      if (conflictColumn) {
+        const duplicate = table.some((existing) =>
+          sameValue(existing[conflictColumn], row[conflictColumn]),
+        );
+        if (duplicate) {
+          return { rows: [] };
+        }
+      }
       table.push(row);
       return { rows: [clone(row) as T] };
     }
@@ -193,18 +206,24 @@ describe("Neon config", () => {
 });
 
 describe("schema.sql", () => {
-  it("matches the bootstrap statements (leads, invoices, nudge_log)", () => {
+  it("matches the bootstrap statements (leads, invoices, nudge_log, waitlist_signups)", () => {
     const file = readFileSync(join(process.cwd(), "data/schema.sql"), "utf8");
     assert.match(file, /CREATE TABLE IF NOT EXISTS leads/);
     assert.match(file, /CREATE TABLE IF NOT EXISTS invoices/);
     assert.match(file, /CREATE TABLE IF NOT EXISTS nudge_log/);
+    assert.match(file, /CREATE TABLE IF NOT EXISTS waitlist_signups/);
     assert.match(file, /scheduled_for/);
     assert.match(file, /last_error/);
     assert.match(file, /send_attempts/);
     assert.match(file, /user_id/);
     assert.match(file, /ADD COLUMN IF NOT EXISTS user_id/);
-    assert.equal(SCHEMA_STATEMENTS.length, 13);
+    assert.match(file, /waitlist_signups_email_idx/);
+    const waitlistCreate =
+      file.match(/CREATE TABLE IF NOT EXISTS waitlist_signups \(([\s\S]*?)\);/)?.[1] ?? "";
+    assert.doesNotMatch(waitlistCreate, /user_id/);
+    assert.equal(SCHEMA_STATEMENTS.length, 15);
     assert.match(SCHEMA_SQL, /CREATE TABLE IF NOT EXISTS leads/);
+    assert.match(SCHEMA_SQL, /CREATE TABLE IF NOT EXISTS waitlist_signups/);
   });
 });
 
@@ -390,6 +409,7 @@ describe("NeonDataStore", () => {
     await store.listLeads(OWNER);
     assert.equal(statements[0], normalizeSql(SCHEMA_STATEMENTS[0]));
     assert.ok(statements.some((sql) => sql.startsWith("CREATE TABLE IF NOT EXISTS nudge_log")));
+    assert.ok(statements.some((sql) => sql.startsWith("CREATE TABLE IF NOT EXISTS waitlist_signups")));
     assert.ok(statements.some((sql) => sql.startsWith("ALTER TABLE leads ADD COLUMN IF NOT EXISTS user_id")));
     assert.ok(statements.some((sql) => sql === "SELECT * FROM leads WHERE user_id = $1"));
     statements.length = 0;
@@ -427,5 +447,18 @@ describe("NeonDataStore", () => {
     await assertTenantIsolation(store);
     assert.equal(client.tables.leads.some((row) => row.id === "lead_legacy"), true);
     assert.equal(client.tables.invoices.some((row) => row.id === "inv_legacy"), true);
+  });
+
+  it("saves waitlist emails without creating a person, and ignores duplicates", async () => {
+    const client = seededClient();
+    const store = new NeonDataStore({ client });
+    await assertWaitlistIdempotentAndIsolated(store);
+    assert.equal(client.tables.waitlist_signups.length, 1);
+    assert.equal(client.tables.waitlist_signups[0]?.email, "alex@studio.com");
+    assert.equal(client.tables.waitlist_signups[0]?.user_id, undefined);
+    assert.equal(
+      client.tables.leads.some((row) => row.email === "alex@studio.com"),
+      false,
+    );
   });
 });

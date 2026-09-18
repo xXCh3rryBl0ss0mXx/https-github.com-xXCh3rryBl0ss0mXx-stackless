@@ -15,11 +15,15 @@ import {
   nudgeFromDb,
   nudgeToDb,
   sqlPlaceholders,
+  WAITLIST_DB_COLUMNS,
+  waitlistFromDb,
+  waitlistToDb,
 } from "./neon-map";
 import { SCHEMA_STATEMENTS } from "./neon-schema";
 import { createNeonSqlClient, type SqlClient } from "./neon-sql";
 import { isOwnedBy, ownerIdOf, requireOwnerId } from "./owner";
 import { applyInvoiceWrite, applyLeadWrite } from "./record-input";
+import { parseWaitlistEmail } from "./waitlist";
 import type {
   DataStore,
   Invoice,
@@ -29,6 +33,7 @@ import type {
   Nudge,
   NudgeDraftWrite,
   NudgeKind,
+  WaitlistSignupWriteResult,
 } from "./types";
 
 export { MISSING_NEON_URL };
@@ -231,6 +236,30 @@ export class NeonDataStore implements DataStore {
       if (owner) ids.add(owner);
     }
     return [...ids];
+  }
+
+  async addWaitlistSignup(email: string): Promise<WaitlistSignupWriteResult> {
+    const normalized = parseWaitlistEmail(email);
+    const signup = {
+      id: `waitlist_${crypto.randomUUID()}`,
+      email: normalized,
+      createdAt: todayStamp(),
+    };
+    const inserted = await this.query(
+      `INSERT INTO waitlist_signups (${WAITLIST_DB_COLUMNS.join(", ")}) VALUES (${sqlPlaceholders(WAITLIST_DB_COLUMNS.length)}) ON CONFLICT (email) DO NOTHING RETURNING ${WAITLIST_DB_COLUMNS.join(", ")}`,
+      dbValues(waitlistToDb(signup), WAITLIST_DB_COLUMNS),
+    );
+    if (inserted.rows[0]) {
+      return { created: true, signup: waitlistFromDb(inserted.rows[0]) };
+    }
+    const existing = await this.query("SELECT * FROM waitlist_signups WHERE email = $1", [
+      normalized,
+    ]);
+    const row = existing.rows[0];
+    if (!row) {
+      throw new Error("Couldn’t save that email. Try again.");
+    }
+    return { created: false, signup: waitlistFromDb(row) };
   }
 
   private async loadLeads(userId: string): Promise<Lead[]> {

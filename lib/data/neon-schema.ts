@@ -49,6 +49,12 @@ export const SCHEMA_STATEMENTS: string[] = [
   `CREATE INDEX IF NOT EXISTS leads_user_id_idx ON leads (user_id)`,
   `CREATE INDEX IF NOT EXISTS invoices_user_id_idx ON invoices (user_id)`,
   `CREATE INDEX IF NOT EXISTS nudge_log_user_id_idx ON nudge_log (user_id)`,
+  `CREATE TABLE IF NOT EXISTS waitlist_signups (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  created_at TEXT NOT NULL
+)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS waitlist_signups_email_idx ON waitlist_signups (email)`,
 ];
 
 export const SCHEMA_SQL = `${SCHEMA_STATEMENTS.map((statement) => statement.trim()).join(";\n\n")};\n`;

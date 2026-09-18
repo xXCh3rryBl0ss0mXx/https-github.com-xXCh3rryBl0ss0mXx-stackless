@@ -4,7 +4,7 @@ import { followUpDraftText, invoiceDraftText } from "./draft-text";
 import { MemoryDataStore } from "./memory-store";
 import { invoiceWriteFromForm, leadWriteFromForm } from "./record-input";
 import { seedInvoices, seedLeads, seedNudges } from "./seed";
-import { assertTenantIsolation, assertUnownedRowsHidden } from "./tenant-isolation";
+import { assertTenantIsolation, assertUnownedRowsHidden, assertWaitlistIdempotentAndIsolated } from "./tenant-isolation";
 import { FIXTURE_USER_ID, fixtureInvoices, fixtureLeads, fixtureSnapshot } from "./test-fixtures";
 import type { StoreSnapshot } from "./types";
 
@@ -280,6 +280,11 @@ describe("MemoryDataStore", () => {
     assert.ok(latest?.leads.some((lead) => lead.id === "lead_legacy" && !lead.userId));
     assert.ok(latest?.invoices.some((invoice) => invoice.id === "inv_legacy" && !invoice.userId));
     assert.ok(latest?.nudges.some((nudge) => nudge.id === "nudge_legacy" && !nudge.userId));
+  });
+
+  it("saves waitlist emails in this process without creating a person, and ignores duplicates", async () => {
+    const store = freshStore();
+    await assertWaitlistIdempotentAndIsolated(store);
   });
 });
 
