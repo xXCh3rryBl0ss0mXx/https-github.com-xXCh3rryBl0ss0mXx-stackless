@@ -26,6 +26,27 @@ test("Clerk appearance points at the public Terms and Privacy pages", () => {
   assert.equal(clerkAppearance.layout.privacyPageUrl, PRIVACY_PATH);
 });
 
+test("Sign Up keeps Terms and Privacy links; Manage account does not replace them", () => {
+  assert.equal(
+    (clerkAppearance.elements.footerPages as { display?: string }).display,
+    undefined,
+  );
+  assert.equal(clerkAppearance.elements.footerPagesLink.color, "#e07a3a");
+  assert.equal(clerkAppearance.layout.termsPageUrl, TERMS_PATH);
+  assert.equal(clerkAppearance.layout.privacyPageUrl, PRIVACY_PATH);
+
+  const signUp = readFileSync(join(process.cwd(), "app", "sign-up", "[[...sign-up]]", "page.tsx"), "utf8");
+  assert.match(signUp, /<SignUp/);
+  assert.match(signUp, /<SiteFooter \/>/);
+
+  const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+  const hideSelectors = css.match(/\.cl-badge,[\s\S]*?display:\s*none\s*!important/)?.[0] ?? "";
+  assert.match(hideSelectors, /\.cl-badge,/);
+  assert.doesNotMatch(hideSelectors, /\.cl-footerPages/);
+  assert.doesNotMatch(hideSelectors, /legalConsent|legal-consent/);
+  assert.match(css, /\.cl-userProfile-root \.cl-footerPages/);
+});
+
 test("UserProfile appearance stays the peach navbar, not a restyle of Profile or Security", () => {
   assert.equal(clerkUserProfileAppearance.elements.navbar.background, "#fff8f0");
   assert.equal(clerkUserProfileAppearance.elements.navbar.borderColor, "#f0e2d4");
@@ -33,6 +54,7 @@ test("UserProfile appearance stays the peach navbar, not a restyle of Profile or
   assert.equal(clerkUserProfileAppearance.elements.scrollBox.background, "#ffffff");
   assert.equal(clerkUserProfileAppearance.layout.termsPageUrl, TERMS_PATH);
   assert.equal(clerkUserProfileAppearance.layout.privacyPageUrl, PRIVACY_PATH);
+  assert.equal(clerkUserProfileAppearance.elements.footerPages.display, "none");
 });
 
 test("Manage account UserProfile mounts Terms and Privacy as custom pages", () => {
