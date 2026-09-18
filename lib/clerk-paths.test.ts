@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CLERK_USER_PROFILE_PATH, peachSignInUrl } from "./clerk-paths";
+import {
+  CLERK_USER_PROFILE_PATH,
+  CLERK_USER_PROFILE_PRIVACY_URL,
+  CLERK_USER_PROFILE_TERMS_URL,
+  peachSignInUrl,
+} from "./clerk-paths";
 
 test("peachSignInUrl stays on the app Sign In page, not Clerk Account Portal", () => {
   const url = peachSignInUrl("https://example.com/app");
@@ -15,4 +20,11 @@ test("account profile is an in-app path, and unsigned visits return via peach Si
   const url = peachSignInUrl("/account");
   assert.equal(url, "/sign-in?redirect_url=%2Faccount");
   assert.equal(url.includes("accounts.dev"), false);
+});
+
+test("Manage account Terms and Privacy are UserProfile path segments, not public routes", () => {
+  assert.equal(CLERK_USER_PROFILE_TERMS_URL, "terms");
+  assert.equal(CLERK_USER_PROFILE_PRIVACY_URL, "privacy");
+  assert.equal(`${CLERK_USER_PROFILE_PATH}/${CLERK_USER_PROFILE_TERMS_URL}`, "/account/terms");
+  assert.equal(`${CLERK_USER_PROFILE_PATH}/${CLERK_USER_PROFILE_PRIVACY_URL}`, "/account/privacy");
 });

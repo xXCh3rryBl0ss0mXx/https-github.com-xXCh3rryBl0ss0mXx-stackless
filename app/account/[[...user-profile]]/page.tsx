@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { UserProfile } from "@clerk/nextjs";
 import { ManageBillingButton, SubscribeButton } from "@/components/billing-buttons";
-import { clerkUserProfileAppearance, isClerkConfigured } from "@/lib/clerk";
+import { StacklessUserProfile } from "@/components/stackless-user-profile";
+import { isClerkConfigured } from "@/lib/clerk";
 import { APP_PATH, CLERK_USER_PROFILE_PATH } from "@/lib/clerk-paths";
 import { requireSignedIn } from "@/lib/require-signed-in";
 import { getBillingState } from "@/lib/stripe/billing";
@@ -71,11 +71,7 @@ export default async function AccountPage() {
         ) : null}
         <div className="flex w-full justify-center">
           {isClerkConfigured() ? (
-            <UserProfile
-              routing="path"
-              path={CLERK_USER_PROFILE_PATH}
-              appearance={clerkUserProfileAppearance}
-            />
+            <StacklessUserProfile />
           ) : (
             <p className="text-center text-muted">
               Account settings aren’t connected yet.

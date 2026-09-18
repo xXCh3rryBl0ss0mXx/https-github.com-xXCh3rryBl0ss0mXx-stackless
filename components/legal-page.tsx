@@ -6,17 +6,39 @@ import { CONTACT_EMAIL } from "@/lib/legal";
 const chipClass =
   "rounded-full border border-line bg-white px-4 py-2 text-[0.9rem] font-semibold text-muted no-underline";
 
+export type LegalPageVariant = "site" | "embedded";
+
 export function LegalPage({
   badge,
   title,
   intro,
   children,
+  variant = "site",
 }: {
   badge: string;
   title: string;
   intro: string;
   children: ReactNode;
+  /** `site` is the public /terms and /privacy chrome. `embedded` is Clerk Manage account. */
+  variant?: LegalPageVariant;
 }) {
+  const article = (
+    <article className={variant === "embedded" ? "w-full min-w-0" : undefined}>
+      <div className="mb-[0.9rem] inline-block rounded-full bg-badge-bg px-3 py-[0.3rem] text-[0.8rem] font-bold text-badge-fg">
+        {badge}
+      </div>
+      <h1 className="mb-3 text-[clamp(1.7rem,4vw,2.2rem)] leading-[1.15] font-bold tracking-[-0.03em]">
+        {title}
+      </h1>
+      <p className="mb-6 max-w-[40rem] text-[1.05rem] text-muted">{intro}</p>
+      <div className="grid gap-4">{children}</div>
+    </article>
+  );
+
+  if (variant === "embedded") {
+    return article;
+  }
+
   return (
     <div className="mx-auto w-[min(960px,calc(100%-2rem))] pt-6 pb-12">
       <header className="mb-8 flex items-center justify-between">
@@ -28,16 +50,7 @@ export function LegalPage({
         </Link>
       </header>
 
-      <article>
-        <div className="mb-[0.9rem] inline-block rounded-full bg-badge-bg px-3 py-[0.3rem] text-[0.8rem] font-bold text-badge-fg">
-          {badge}
-        </div>
-        <h1 className="mb-3 text-[clamp(1.7rem,4vw,2.2rem)] leading-[1.15] font-bold tracking-[-0.03em]">
-          {title}
-        </h1>
-        <p className="mb-6 max-w-[40rem] text-[1.05rem] text-muted">{intro}</p>
-        <div className="grid gap-4">{children}</div>
-      </article>
+      {article}
 
       <SiteFooter />
     </div>
